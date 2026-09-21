@@ -1,10 +1,10 @@
-# Contributing to MailTub
+# Contributing to shitmail
 
-Thank you for your interest in contributing to MailTub! This guide will help you get started.
+Thank you for your interest in contributing to shitmail! This guide will help you get started.
 
 ## Project Overview
 
-MailTub is a self-hosted disposable email service built with:
+shitmail is a self-hosted disposable email service built with:
 - **Go 1.25** — single binary backend (HTTP + SMTP + SQLite + WebSocket)
 - **React 18 + TypeScript + Tailwind v3** — frontend (embedded in the binary)
 - **modernc.org/sqlite** — pure-Go SQLite driver (no CGO)
@@ -19,8 +19,8 @@ MailTub is a self-hosted disposable email service built with:
 ### Getting Started
 
 ```bash
-git clone https://github.com/dml-labs/mailtub.git
-cd mailtub
+git clone https://github.com/marc-schuetze/shitmail.git
+cd shitmail
 
 # Install frontend dependencies
 cd web && pnpm install --ignore-workspace && cd ..
@@ -31,8 +31,8 @@ cd web && pnpm install --ignore-workspace && cd ..
 ```bash
 # Terminal 1: build frontend, then start Go backend
 cd web && pnpm run build && cd ..
-go build -buildvcs=false -o bin/mailtub ./cmd/mailtub
-./bin/mailtub
+go build -buildvcs=false -o bin/shitmail ./cmd/shitmail
+./bin/shitmail
 # UI available at http://localhost:8080
 ```
 
@@ -40,7 +40,7 @@ go build -buildvcs=false -o bin/mailtub ./cmd/mailtub
 
 ```bash
 # Terminal 1: Go backend
-go build -buildvcs=false -o bin/mailtub ./cmd/mailtub && ./bin/mailtub
+go build -buildvcs=false -o bin/shitmail ./cmd/shitmail && ./bin/shitmail
 
 # Terminal 2: Vite dev server (proxies /api and /ws to Go on :3000)
 cd web && GO_PORT=3000 PORT=3001 pnpm exec vite
@@ -51,13 +51,13 @@ cd web && GO_PORT=3000 PORT=3001 pnpm exec vite
 
 ```bash
 # Send a test email
-./bin/mailtub new -q | xargs -I{} ./bin/mailtub send {}
+./bin/shitmail new -q | xargs -I{} ./bin/shitmail send {}
 ```
 
 ## Project Structure
 
 ```
-cmd/mailtub/         CLI subcommand dispatcher
+cmd/shitmail/         CLI subcommand dispatcher
 internal/
   api/               HTTP router + REST handlers
   api/admin/         Admin panel (HMAC auth + REST)
@@ -85,11 +85,11 @@ scripts/             Release helper scripts (e.g. gen-winres.sh — patches Wind
 go test ./...
 
 # Build binary (after changing .go files)
-go build -buildvcs=false -o bin/mailtub ./cmd/mailtub
+go build -buildvcs=false -o bin/shitmail ./cmd/shitmail
 
 # Build with embedded frontend
 cd web && pnpm run build && cd ..
-go build -buildvcs=false -o bin/mailtub ./cmd/mailtub
+go build -buildvcs=false -o bin/shitmail ./cmd/shitmail
 ```
 
 ### Frontend (React)

@@ -76,8 +76,8 @@ export default function AdminSetup() {
         {/* Logo */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 mb-3">
-            <img src="/favicon-96x96.png" alt="MailTub" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="text-primary font-bold text-xl tracking-tight">MailTub</span>
+            <img src="/favicon-96x96.png" alt="shitmail" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-primary font-bold text-xl tracking-tight">shitmail</span>
           </div>
           <p className="text-muted text-sm">Admin Setup</p>
         </div>

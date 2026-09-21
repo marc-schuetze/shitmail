@@ -1,6 +1,6 @@
 {
-  "name": "MailTub",
-  "short_name": "MailTub",
+  "name": "shitmail",
+  "short_name": "shitmail",
   "description": "Self-hosted disposable email service by DML Labs",
   "start_url": "/",
   "display": "standalone",

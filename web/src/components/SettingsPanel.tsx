@@ -250,7 +250,7 @@ function AboutSection() {
       <div className="flex flex-col gap-1 pt-2 border-t border-border">
         <div className="flex items-center gap-3">
           <a
-            href="https://github.com/dml-labs/mailtub"
+            href="https://github.com/marc-schuetze/shitmail"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -258,7 +258,7 @@ function AboutSection() {
             GitHub →
           </a>
           <a
-            href="https://github.com/dml-labs/mailtub/releases"
+            href="https://github.com/marc-schuetze/shitmail/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -266,7 +266,7 @@ function AboutSection() {
             Releases →
           </a>
           <a
-            href="https://github.com/dml-labs/mailtub/issues"
+            href="https://github.com/marc-schuetze/shitmail/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -377,7 +377,7 @@ export function SettingsPanel({
           <ExportSection emails={activeEmails} mailbox={activeMailbox} />
         </Section>
 
-        <Section title="About MailTub" icon={<Info className="size-3.5" />}>
+        <Section title="About shitmail" icon={<Info className="size-3.5" />}>
           <AboutSection />
         </Section>
       </div>

@@ -1,4 +1,4 @@
-// Package middleware provides shared HTTP middleware for MailTub's REST API.
+// Package middleware provides shared HTTP middleware for shitmail's REST API.
 package middleware
 
 import (

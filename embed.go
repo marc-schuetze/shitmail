@@ -1,7 +1,7 @@
-// Package mailtub exports the embedded frontend filesystem so cmd/mailtub
+// Package shitmail exports the embedded frontend filesystem so cmd/shitmail
 // can pass it to the HTTP router.  The //go:embed directive bundles the
 // entire web/dist directory into the binary at compile time.
-package mailtub
+package shitmail
 
 import "embed"
 

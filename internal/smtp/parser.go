@@ -43,6 +43,9 @@ type ParseOptions struct {
 	// 0 means unlimited.
 	MaxTotalAttachmentBytes int64
 
+	// DropAttachments discards every attachment part (counted in Skipped).
+	DropAttachments bool
+
 	// MaxBodyBytes caps each text/plain or text/html body part.
 	// Parts that exceed this are truncated with a trailing notice appended.
 	// 0 means unlimited.
@@ -125,6 +128,11 @@ func Parse(r io.Reader, opts ParseOptions) (*ParsedEmail, error) {
 			}
 
 		case *mail.AttachmentHeader:
+			if opts.DropAttachments {
+				_, _ = io.Copy(io.Discard, p.Body)
+				parsed.Skipped++
+				continue
+			}
 			ct, _, _ := ph.ContentType()
 			filename, _ := ph.Filename()
 			if filename == "" {

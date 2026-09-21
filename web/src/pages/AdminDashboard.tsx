@@ -291,7 +291,7 @@ export default function AdminDashboard() {
             <div className="size-7 rounded-lg bg-emerald-500 flex items-center justify-center">
               <Shield className="size-4 text-white" />
             </div>
-            <span className="font-bold text-base text-primary">MailTub</span>
+            <span className="font-bold text-base text-primary">shitmail</span>
             <span className="text-muted text-sm">/ Admin</span>
           </div>
           {stats && (

@@ -1,4 +1,4 @@
-// Package admin implements the MailTub admin panel: bcrypt login verification,
+// Package admin implements the shitmail admin panel: bcrypt login verification,
 // HMAC-signed session cookies, brute-force lockout, and REST handlers.
 package admin
 
@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	cookieName = "mailtub_admin"
+	cookieName = "shitmail_admin"
 	cookieTTL  = 24 * time.Hour
 )
 

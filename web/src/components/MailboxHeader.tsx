@@ -107,7 +107,7 @@ export function MailboxHeader({
             </svg>
           </div>
           <div>
-            <div className="text-[13px] font-bold text-white tracking-tight leading-none">MailTub</div>
+            <div className="text-[13px] font-bold text-white tracking-tight leading-none">shitmail</div>
             <div className="text-[9px] text-slate-600 font-medium tracking-wide uppercase leading-none mt-0.5">by DML Labs</div>
           </div>
         </div>

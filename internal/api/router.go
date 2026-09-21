@@ -1,4 +1,4 @@
-// Package api wires up the HTTP router for MailTub's REST API and
+// Package api wires up the HTTP router for shitmail's REST API and
 // WebSocket endpoint.  The embedded React SPA is served as a catch-all.
 package api
 
@@ -15,16 +15,16 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/dml-labs/mailtub/internal/api/admin"
-	"github.com/dml-labs/mailtub/internal/api/handler"
-	"github.com/dml-labs/mailtub/internal/api/middleware"
-	"github.com/dml-labs/mailtub/internal/config"
-	"github.com/dml-labs/mailtub/internal/domain"
-	"github.com/dml-labs/mailtub/internal/logbuf"
-	"github.com/dml-labs/mailtub/internal/metrics"
-	"github.com/dml-labs/mailtub/internal/ratelimit"
-	"github.com/dml-labs/mailtub/internal/storage"
-	"github.com/dml-labs/mailtub/internal/ws"
+	"github.com/marc-schuetze/shitmail/internal/api/admin"
+	"github.com/marc-schuetze/shitmail/internal/api/handler"
+	"github.com/marc-schuetze/shitmail/internal/api/middleware"
+	"github.com/marc-schuetze/shitmail/internal/config"
+	"github.com/marc-schuetze/shitmail/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/logbuf"
+	"github.com/marc-schuetze/shitmail/internal/metrics"
+	"github.com/marc-schuetze/shitmail/internal/ratelimit"
+	"github.com/marc-schuetze/shitmail/internal/storage"
+	"github.com/marc-schuetze/shitmail/internal/ws"
 )
 
 // NewRouter builds and returns the main HTTP mux.
@@ -60,7 +60,7 @@ func NewRouter(
 			authHeader := req.Header.Get("Authorization")
 			tokenOK := cfg.AdminPassword != "" && authHeader == "Bearer "+cfg.AdminPassword
 			if !tokenOK && !adm.HasValidCookie(req) {
-				w.Header().Set("WWW-Authenticate", `Bearer realm="MailTub metrics"`)
+				w.Header().Set("WWW-Authenticate", `Bearer realm="shitmail metrics"`)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -68,9 +68,17 @@ func NewRouter(
 		metricsHandler.ServeHTTP(w, req)
 	})
 
-	// WebSocket
-	r.Get("/ws", func(w http.ResponseWriter, req *http.Request) {
-		ws.ServeWS(hub, w, req)
+	// Identity comes from the reverse proxy (Authentik forward-auth headers).
+	sso := middleware.SSO(cfg.AdminGroup)
+	ws.PublicHost = cfg.SMTPDomain
+
+	// WebSocket — subscribe only to mailboxes the SSO user owns.
+	r.With(sso).Get("/ws", func(w http.ResponseWriter, req *http.Request) {
+		user, _ := middleware.UserFrom(req.Context())
+		ws.ServeWS(hub, w, req, func(address string) bool {
+			mb, err := mailboxes.FindByAddress(req.Context(), address)
+			return err == nil && mb != nil && !mb.IsExpired() && (mb.Owner == user.UID || user.Admin)
+		})
 	})
 
 	// Rate limiter: max 20 new mailboxes per IP per hour.
@@ -87,19 +95,30 @@ func NewRouter(
 		r.Get("/health", handler.Health)
 		r.Get("/config", handler.Config(cfg))
 
-		r.With(mailboxLimiter.Middleware).Post("/mailbox", mbh.Create)
-		r.Get("/mailbox/{address}", mbh.Get)
-		r.Delete("/mailbox/{address}", mbh.Delete)
+		r.Group(func(r chi.Router) {
+			r.Use(sso)
 
-		r.Get("/mailbox/{address}/emails", eh.List)
-		r.Get("/mailbox/{address}/emails/{id}", eh.Get)
-		r.Delete("/mailbox/{address}/emails/{id}", eh.Delete)
-		r.Patch("/mailbox/{address}/emails/{id}/read", eh.MarkRead)
-		r.Get("/mailbox/{address}/emails/{id}/attachments/{attachmentId}", eh.GetAttachment)
+			r.Get("/me", mbh.Me)
+			r.Get("/mailboxes", mbh.List)
+			r.Get("/proxy", handler.ImageProxy)
+
+			r.With(mailboxLimiter.Middleware).Post("/mailbox", mbh.Create)
+			r.Get("/mailbox/{address}", mbh.Get)
+			r.Delete("/mailbox/{address}", mbh.Delete)
+			r.Patch("/mailbox/{address}", mbh.SetTTL)
+
+			r.Get("/mailbox/{address}/emails", eh.List)
+			r.Get("/mailbox/{address}/emails/{id}", eh.Get)
+			r.Delete("/mailbox/{address}/emails/{id}", eh.Delete)
+			r.Patch("/mailbox/{address}/emails/{id}/read", eh.MarkRead)
+			r.Get("/mailbox/{address}/emails/{id}/attachments/{attachmentId}", eh.GetAttachment)
+		})
 	})
 
-	// Admin panel API
+	// Admin panel API — reachable only for members of ADMIN_GROUP; the
+	// upstream password login still sits behind that gate.
 	r.Route("/admin/api", func(r chi.Router) {
+		r.Use(sso, requireAdmin)
 		// Public endpoints (no auth required)
 		r.Get("/setup-status", adm.SetupStatus)
 		r.Post("/setup", adm.Setup)
@@ -150,6 +169,17 @@ func spaHandler(webFS embed.FS) http.Handler {
 			return
 		}
 		fileServer.ServeHTTP(w, r)
+	})
+}
+
+// requireAdmin rejects SSO users outside ADMIN_GROUP.
+func requireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, ok := middleware.UserFrom(r.Context()); !ok || !u.Admin {
+			http.Error(w, `{"error":"admin group required"}`, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

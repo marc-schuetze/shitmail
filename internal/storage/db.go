@@ -1,4 +1,4 @@
-// Package storage implements SQLite-backed repositories for MailTub.
+// Package storage implements SQLite-backed repositories for shitmail.
 // It uses modernc.org/sqlite — a pure-Go SQLite driver with no CGO dependency —
 // so the binary stays truly self-contained on every platform.
 package storage
@@ -23,12 +23,14 @@ CREATE TABLE IF NOT EXISTS mailboxes (
     address    TEXT UNIQUE NOT NULL,
     local_part TEXT NOT NULL,
     domain     TEXT NOT NULL,
+    owner      TEXT NOT NULL DEFAULT '',
     expires_at DATETIME NOT NULL,
     created_at DATETIME NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_mailboxes_address    ON mailboxes(address);
 CREATE INDEX IF NOT EXISTS idx_mailboxes_expires_at ON mailboxes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_mailboxes_owner      ON mailboxes(owner);
 
 CREATE TABLE IF NOT EXISTS emails (
     id          TEXT PRIMARY KEY,
@@ -78,7 +80,10 @@ func Open(path string) (*DB, error) {
 		return nil, fmt.Errorf("storage: create data dir: %w", err)
 	}
 
-	sqldb, err := sql.Open("sqlite", path)
+	// Pragmas in the DSN apply to every connection; the ones in the schema
+	// string only hit the connection that ran the migration.
+	dsn := "file:" + path + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+	sqldb, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("storage: open sqlite: %w", err)
 	}

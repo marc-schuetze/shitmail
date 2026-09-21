@@ -11,15 +11,15 @@ import (
 	"syscall"
 	"time"
 
-	mailtub "github.com/dml-labs/mailtub"
-	"github.com/dml-labs/mailtub/internal/api"
-	"github.com/dml-labs/mailtub/internal/api/handler"
-	"github.com/dml-labs/mailtub/internal/cache"
-	"github.com/dml-labs/mailtub/internal/config"
-	"github.com/dml-labs/mailtub/internal/logbuf"
-	"github.com/dml-labs/mailtub/internal/smtp"
-	"github.com/dml-labs/mailtub/internal/storage"
-	"github.com/dml-labs/mailtub/internal/ws"
+	shitmail "github.com/marc-schuetze/shitmail"
+	"github.com/marc-schuetze/shitmail/internal/api"
+	"github.com/marc-schuetze/shitmail/internal/api/handler"
+	"github.com/marc-schuetze/shitmail/internal/cache"
+	"github.com/marc-schuetze/shitmail/internal/config"
+	"github.com/marc-schuetze/shitmail/internal/logbuf"
+	"github.com/marc-schuetze/shitmail/internal/smtp"
+	"github.com/marc-schuetze/shitmail/internal/storage"
+	"github.com/marc-schuetze/shitmail/internal/ws"
 	"github.com/joho/godotenv"
 )
 
@@ -37,14 +37,14 @@ func runServe(args []string) {
 	fs.StringVar(&configFile, "config", "", "Path to a .env config file (default: .env in CWD)")
 
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub serve [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail serve [flags]")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()
 		fmt.Fprintln(os.Stderr, "\nEnvironment variables:")
 		fmt.Fprintln(os.Stderr, "  PORT              HTTP port (default 8080)")
 		fmt.Fprintln(os.Stderr, "  SMTP_PORT         SMTP port (default 2525)")
 		fmt.Fprintln(os.Stderr, "  MAILTUB_DOMAIN    Email domain (default localhost)")
-		fmt.Fprintln(os.Stderr, "  DATABASE_PATH     SQLite path (default ./data/mailtub.db)")
+		fmt.Fprintln(os.Stderr, "  DATABASE_PATH     SQLite path (default ./data/shitmail.db)")
 		fmt.Fprintln(os.Stderr, "  MAILBOX_TTL       Mailbox lifetime (default 24h)")
 		fmt.Fprintln(os.Stderr, "  SMTP_STARTTLS     Enable STARTTLS: true/false (default false)")
 		fmt.Fprintln(os.Stderr, "  TLS_CERT_FILE     PEM cert for STARTTLS (auto-generated if unset)")
@@ -52,7 +52,7 @@ func runServe(args []string) {
 		fmt.Fprintln(os.Stderr, "  REDIS_URL         Optional Redis cache URL")
 		fmt.Fprintln(os.Stderr, "  LOG_LEVEL         debug|info|warn|error (default info)")
 		fmt.Fprintln(os.Stderr, "  ADMIN_PASSWORD    Override DB-managed admin password (Docker/CI deployments)")
-		fmt.Fprintln(os.Stderr, "\nSee: https://github.com/dml-labs/mailtub/blob/main/docs/configuration.md")
+		fmt.Fprintln(os.Stderr, "\nSee: https://github.com/marc-schuetze/shitmail/blob/main/docs/configuration.md")
 	}
 	_ = fs.Parse(args)
 
@@ -77,7 +77,7 @@ func runServe(args []string) {
 	})))
 	slog.SetDefault(logger)
 
-	slog.Info("MailTub starting",
+	slog.Info("shitmail starting",
 		"version", cfg.AppVersion,
 		"domain", cfg.SMTPDomain,
 		"http_port", cfg.HTTPPort,
@@ -115,7 +115,7 @@ func runServe(args []string) {
 	go cleanupLoop(db, 30*time.Minute)
 
 	// HTTP server with embedded frontend
-	router := api.NewRouter(cfg, db.Mailboxes, db.Emails, hub, mailtub.WebFS, ring, db.Settings)
+	router := api.NewRouter(cfg, db.Mailboxes, db.Emails, hub, shitmail.WebFS, ring, db.Settings)
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	httpSrv := &http.Server{
 		Addr:         addr,
@@ -146,7 +146,7 @@ func runServe(args []string) {
 		slog.Error("http shutdown error", "error", err)
 	}
 	smtpSrv.Close()
-	slog.Info("MailTub stopped")
+	slog.Info("shitmail stopped")
 }
 
 // loadEnvFile loads a specific .env file via godotenv, overriding any already-set

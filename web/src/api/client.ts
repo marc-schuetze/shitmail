@@ -2,11 +2,26 @@ import type { Email, Mailbox } from '@/types'
 
 const BASE = '/api/v1'
 
+// The SSO proxy answers an expired session with a 302 to the login. Following
+// it from fetch() would hit the outpost's /start on every poll and rotate the
+// login state under a login in progress (400 "state mismatch" on callback).
+// So: never follow, and reload the page once so the browser does the login.
+function sessionGone(): never {
+  const last = Number(sessionStorage.getItem('shitmail_reload_at') ?? 0)
+  if (Date.now() - last > 30_000) {
+    sessionStorage.setItem('shitmail_reload_at', String(Date.now()))
+    window.location.reload()
+  }
+  throw new Error('session expired')
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
+    redirect: 'manual',
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
+  if (res.type === 'opaqueredirect' || res.status === 401) sessionGone()
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error((body as { error?: string }).error ?? res.statusText)
@@ -28,10 +43,35 @@ export function createMailbox(localPart?: string, ttlHours?: number): Promise<Ma
   })
 }
 
+/** All live mailboxes owned by the SSO user (server-side, shared across devices). */
+export function listMailboxes(): Promise<{ mailboxes: Mailbox[] }> {
+  return request(`${BASE}/mailboxes`)
+}
+
+export interface Me { uid: string; username: string; tag: string; admin: boolean; domain: string }
+
+/** Identity as seen through the reverse-proxy headers. */
+export function me(): Promise<Me> {
+  return request(`${BASE}/me`)
+}
+
+/** URL that fetches a remote image through the server-side proxy. */
+export function proxyUrl(remote: string): string {
+  return `${BASE}/proxy?u=${encodeURIComponent(remote)}`
+}
+
 export function getMailbox(
   address: string,
 ): Promise<{ mailbox: Mailbox; emailCount: number }> {
   return request(`${BASE}/mailbox/${enc(address)}`)
+}
+
+/** Re-base the mailbox expiry: 1/6/24/168 hours or -1 = keep forever. */
+export function setMailboxTTL(address: string, ttlHours: number): Promise<Mailbox> {
+  return request(`${BASE}/mailbox/${enc(address)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ ttlHours }),
+  })
 }
 
 export function deleteMailbox(address: string): Promise<void> {
@@ -71,7 +111,8 @@ export async function downloadAttachment(
   filename: string,
 ): Promise<void> {
   const url = `${BASE}/mailbox/${enc(address)}/emails/${emailId}/attachments/${attachmentId}`
-  const res = await fetch(url)
+  const res = await fetch(url, { redirect: 'manual' })
+  if (res.type === 'opaqueredirect') sessionGone()
   if (!res.ok) throw new Error('Download failed')
   const blob = await res.blob()
   triggerDownload(blob, filename)
@@ -91,7 +132,7 @@ function emailToEml(email: Email): string {
     `Date: ${new Date(email.receivedAt).toUTCString()}`,
     `From: ${email.from ?? ''}`,
     `Subject: ${email.subject ?? '(no subject)'}`,
-    `Message-ID: <${email.id}@mailtub>`,
+    `Message-ID: <${email.id}@shitmail>`,
     `MIME-Version: 1.0`,
     `Content-Type: text/plain; charset=UTF-8`,
   ].join('\r\n')

@@ -9,7 +9,7 @@ interface ThemeContextValue {
   setTheme: (t: Theme) => void
 }
 
-const STORAGE_KEY = 'mailtub_theme'
+const STORAGE_KEY = 'shitmail_theme'
 
 const ThemeCtx = createContext<ThemeContextValue>({
   theme: 'dark',

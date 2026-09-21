@@ -65,7 +65,7 @@ func TestLoad_defaults(t *testing.T) {
 		t.Setenv(k, "")
 	}
 	// Point MAILTUB_CONFIG to a nonexistent path so loadYAML is a no-op.
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 
 	cfg := Load()
 
@@ -92,7 +92,7 @@ func TestLoad_defaults(t *testing.T) {
 // ── Load — env var overrides ───────────────────────────────────────────────
 
 func TestLoad_envOverridesPort(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("PORT", "9090")
 	t.Setenv("SMTP_PORT", "2600")
 
@@ -107,7 +107,7 @@ func TestLoad_envOverridesPort(t *testing.T) {
 }
 
 func TestLoad_envOverridesDomain(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("MAILTUB_DOMAIN", "mail.example.com")
 
 	cfg := Load()
@@ -118,7 +118,7 @@ func TestLoad_envOverridesDomain(t *testing.T) {
 }
 
 func TestLoad_envOverridesMailboxTTL(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("MAILBOX_TTL", "1h")
 
 	cfg := Load()
@@ -129,7 +129,7 @@ func TestLoad_envOverridesMailboxTTL(t *testing.T) {
 }
 
 func TestLoad_starttlsTrue(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("SMTP_STARTTLS", "true")
 
 	cfg := Load()
@@ -140,7 +140,7 @@ func TestLoad_starttlsTrue(t *testing.T) {
 }
 
 func TestLoad_adminPassword(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("ADMIN_PASSWORD", "supersecret")
 
 	cfg := Load()
@@ -151,7 +151,7 @@ func TestLoad_adminPassword(t *testing.T) {
 }
 
 func TestLoad_smtpMaxSizeBytes(t *testing.T) {
-	t.Setenv("MAILTUB_CONFIG", "/tmp/mailtub_test_nonexistent.yaml")
+	t.Setenv("MAILTUB_CONFIG", "/tmp/shitmail_test_nonexistent.yaml")
 	t.Setenv("SMTP_MAX_SIZE_MB", "10")
 
 	cfg := Load()

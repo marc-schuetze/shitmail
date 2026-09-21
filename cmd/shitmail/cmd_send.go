@@ -14,11 +14,11 @@ func runSend(args []string) {
 	fs := flag.NewFlagSet("send", flag.ExitOnError)
 	smtpAddr := fs.String("smtp", envOr("MAILTUB_SMTP", "localhost:2525"), "SMTP server address (host:port)")
 	from := fs.String("from", "test@example.com", "sender address")
-	subject := fs.String("subject", "Test email from MailTub CLI", "email subject")
+	subject := fs.String("subject", "Test email from shitmail CLI", "email subject")
 	body := fs.String("body", "", "plain text body (default: auto-generated)")
 	starttls := fs.Bool("starttls", false, "use STARTTLS (skips certificate verification)")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub send <to> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail send <to> [flags]")
 		fmt.Fprintln(os.Stderr, "\nSend a test email to a mailbox via SMTP.")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()
@@ -33,7 +33,7 @@ func runSend(args []string) {
 	to := fs.Arg(0)
 
 	if *body == "" {
-		*body = fmt.Sprintf("Hello from the MailTub CLI!\n\nSent at: %s\nTo: %s\n\n-- MailTub",
+		*body = fmt.Sprintf("Hello from the shitmail CLI!\n\nSent at: %s\nTo: %s\n\n-- shitmail",
 			time.Now().Format(time.RFC1123), to)
 	}
 

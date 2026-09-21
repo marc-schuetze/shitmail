@@ -9,9 +9,11 @@ interface Props {
   onSelect: (email: Email) => void
   starredIds?: Set<string>
   onToggleStar?: (id: string) => void
+  /** In the merged view: mailbox name to show on each row. */
+  labelFor?: (email: Email) => string | undefined
 }
 
-export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleStar }: Props) {
+export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleStar, labelFor }: Props) {
   if (emails.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 py-12 px-6 text-center select-none">
@@ -41,6 +43,7 @@ export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleSt
             isStarred={starredIds?.has(email.id) ?? false}
             onSelect={onSelect}
             onToggleStar={onToggleStar}
+            label={labelFor?.(email)}
           />
         ))}
       </AnimatePresence>
@@ -60,6 +63,7 @@ function EmailRow({
   isStarred,
   onSelect,
   onToggleStar,
+  label,
 }: {
   email: Email
   index: number
@@ -67,6 +71,7 @@ function EmailRow({
   isStarred: boolean
   onSelect: (email: Email) => void
   onToggleStar?: (id: string) => void
+  label?: string
 }) {
   const displayName  = extractDisplayName(email.from) || email.from
   const initial      = senderInitial(email.from)
@@ -142,6 +147,11 @@ function EmailRow({
         <div className="flex items-center gap-1.5">
           {!email.isRead && (
             <span className="size-[5px] rounded-full bg-emerald-400 shrink-0 mt-px" aria-label="unread" />
+          )}
+          {label && (
+            <span className="shrink-0 max-w-[90px] truncate rounded px-1 text-[9px] font-mono bg-surface-3 text-muted">
+              {label}
+            </span>
           )}
           <p
             className={cn(

@@ -1,19 +1,12 @@
 import {
-  Copy, Check, QrCode, RotateCcw, Trash2,
   Search, X as XIcon, Sun, Moon, Monitor,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useTheme, type Theme } from '@/contexts/ThemeContext'
-import type { Mailbox } from '@/types'
 
 interface Props {
-  activeMailbox: Mailbox | null
-  wsConnected: boolean
-  toolbarCopied: boolean
-  onCopyAddress: () => void
-  onQROpen: () => void
-  onRefresh: () => void
-  onDeleteMailbox: () => void
+  /** What the list shows: a mailbox name or "All mailboxes". */
+  context: string
+  initial: string
   searchQuery: string
   onSearchChange: (q: string) => void
   searchRef: React.RefObject<HTMLInputElement>
@@ -28,13 +21,8 @@ const THEME_ICON: Record<Theme, React.ReactNode> = {
 }
 
 export function AppBar({
-  activeMailbox,
-  wsConnected,
-  toolbarCopied,
-  onCopyAddress,
-  onQROpen,
-  onRefresh,
-  onDeleteMailbox,
+  context,
+  initial,
   searchQuery,
   onSearchChange,
   searchRef,
@@ -44,52 +32,7 @@ export function AppBar({
   return (
     <div className="h-10 shrink-0 flex items-center gap-1.5 px-3 border-b border-border bg-surface-1/90 backdrop-blur-sm">
 
-      {/* ── Address chip + actions ────────────────── */}
-      {activeMailbox ? (
-        <>
-          <span className="font-mono text-xs text-secondary bg-surface-0 rounded-md px-2.5 py-1 border border-border truncate max-w-[200px] select-all">
-            {activeMailbox.address}
-          </span>
-
-          <div className="flex items-center gap-0.5 ml-0.5">
-            <button
-              onClick={onCopyAddress}
-              title="Copy address"
-              className={cn('icon-btn size-7', toolbarCopied && 'text-emerald-400')}
-            >
-              {toolbarCopied
-                ? <Check className="size-3.5 text-emerald-400" />
-                : <Copy className="size-3.5" />}
-            </button>
-
-            <button
-              onClick={onQROpen}
-              title="QR code"
-              className="icon-btn size-7"
-            >
-              <QrCode className="size-3.5" />
-            </button>
-
-            <button
-              onClick={onRefresh}
-              title="Refresh inbox"
-              className="icon-btn size-7"
-            >
-              <RotateCcw className="size-3.5" />
-            </button>
-
-            <button
-              onClick={onDeleteMailbox}
-              title="Delete mailbox"
-              className="icon-btn size-7 hover:text-red-400 hover:bg-red-950/30"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-        </>
-      ) : (
-        <span className="text-xs text-muted italic">No mailbox</span>
-      )}
+      <span className="text-xs text-muted">{context}</span>
 
       {/* ── Spacer ───────────────────────────────── */}
       <div className="flex-1" />
@@ -123,20 +66,9 @@ export function AppBar({
         {THEME_ICON[theme]}
       </button>
 
-      {/* ── WS status dot ────────────────────────── */}
-      <span
-        title={wsConnected ? 'WebSocket connected' : 'WebSocket connecting…'}
-        className={cn(
-          'size-1.5 rounded-full shrink-0 transition-colors',
-          wsConnected
-            ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]'
-            : 'bg-border-muted',
-        )}
-      />
-
       {/* ── Avatar ───────────────────────────────── */}
-      <div className="size-6 rounded-full bg-emerald-700 flex items-center justify-center text-[10px] font-bold text-white shrink-0 select-none">
-        M
+      <div className="size-6 rounded-full bg-emerald-700 flex items-center justify-center text-[10px] font-bold text-white shrink-0 select-none uppercase">
+        {initial}
       </div>
     </div>
   )

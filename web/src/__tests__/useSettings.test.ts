@@ -21,21 +21,21 @@ describe('useSettings', () => {
   it('persists settings to localStorage', () => {
     const { result } = renderHook(() => useSettings())
     act(() => result.current.setSettings({ defaultTTLHours: 6 }))
-    const raw = localStorage.getItem('mailtub_settings_v1')
+    const raw = localStorage.getItem('shitmail_settings_v1')
     expect(raw).not.toBeNull()
     expect(JSON.parse(raw!).defaultTTLHours).toBe(6)
   })
 
   it('restores settings from localStorage on mount', () => {
-    localStorage.setItem('mailtub_settings_v1', JSON.stringify({ defaultTTLHours: 168, soundEnabled: false }))
+    localStorage.setItem('shitmail_settings_v1', JSON.stringify({ defaultTTLHours: 168, soundEnabled: false }))
     const { result } = renderHook(() => useSettings())
     expect(result.current.settings.defaultTTLHours).toBe(168)
     expect(result.current.settings.soundEnabled).toBe(false)
   })
 
-  it('blockRemoteImages defaults to false', () => {
+  it('blockRemoteImages defaults to true', () => {
     const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.blockRemoteImages).toBe(false)
+    expect(result.current.settings.blockRemoteImages).toBe(true)
   })
 
   it('blockRemoteImages can be toggled', () => {

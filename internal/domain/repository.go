@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // MailboxRepository defines persistence operations for mailboxes.
 type MailboxRepository interface {
@@ -9,6 +12,10 @@ type MailboxRepository interface {
 	FindByID(ctx context.Context, id string) (*Mailbox, error)
 	Delete(ctx context.Context, id string) error
 	DeleteExpired(ctx context.Context) (int64, error)
+	// UpdateExpiry moves a mailbox's expiry (keep forever / let expire again).
+	UpdateExpiry(ctx context.Context, id string, expiresAt time.Time) error
+	// ListByOwner returns the live (unexpired) mailboxes of one SSO uid, newest first.
+	ListByOwner(ctx context.Context, owner string) ([]*Mailbox, error)
 
 	// Admin operations
 	ListAll(ctx context.Context, limit, offset int) ([]*Mailbox, error)

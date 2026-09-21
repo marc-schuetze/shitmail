@@ -10,8 +10,8 @@ import (
 	gosmtp "github.com/emersion/go-smtp"
 	"github.com/google/uuid"
 
-	"github.com/dml-labs/mailtub/internal/domain"
-	"github.com/dml-labs/mailtub/internal/metrics"
+	"github.com/marc-schuetze/shitmail/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/metrics"
 )
 
 // session handles a single SMTP client connection.
@@ -22,7 +22,7 @@ type session struct {
 }
 
 func (s *session) AuthPlain(_, _ string) error {
-	// MailTub is a receive-only MTA; we accept but do not verify credentials.
+	// shitmail is a receive-only MTA; we accept but do not verify credentials.
 	return nil
 }
 
@@ -53,6 +53,7 @@ func (s *session) Data(r io.Reader) error {
 		MaxAttachmentBytes:      s.backend.maxAttachmentBytes,
 		MaxTotalAttachmentBytes: s.backend.maxTotalAttachmentBytes,
 		MaxBodyBytes:            s.backend.maxBodyBytes,
+		DropAttachments:         s.backend.dropAttachments,
 	}
 
 	parsed, err := Parse(r, opts)

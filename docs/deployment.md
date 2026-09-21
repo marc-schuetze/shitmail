@@ -10,7 +10,7 @@ Supports all major distributions: **Ubuntu, Debian, Fedora, Arch, Mint, Pop!_OS,
 
 > **One-line installer** — detects your distro, downloads the right binary, and optionally installs a systemd service:
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/dml-labs/mailtub/main/install.sh | bash
+> curl -fsSL https://raw.githubusercontent.com/marc-schuetze/shitmail/main/install.sh | bash
 > ```
 
 ### Manual install + systemd
@@ -19,9 +19,9 @@ Supports all major distributions: **Ubuntu, Debian, Fedora, Arch, Mint, Pop!_OS,
 
 ```bash
 # Replace linux_amd64 with your platform (linux_amd64, linux_arm64, linux_arm)
-curl -L https://github.com/dml-labs/mailtub/releases/latest/download/mailtub_linux_amd64.tar.gz \
+curl -L https://github.com/marc-schuetze/shitmail/releases/latest/download/shitmail_linux_amd64.tar.gz \
   | tar -xz -C /usr/local/bin
-chmod +x /usr/local/bin/mailtub
+chmod +x /usr/local/bin/shitmail
 ```
 
 > **Architecture reference**
@@ -34,41 +34,41 @@ chmod +x /usr/local/bin/mailtub
 #### 2. Create data directory
 
 ```bash
-sudo mkdir -p /var/lib/mailtub
-sudo useradd --system --no-create-home --shell /sbin/nologin mailtub
-sudo chown mailtub:mailtub /var/lib/mailtub
+sudo mkdir -p /var/lib/shitmail
+sudo useradd --system --no-create-home --shell /sbin/nologin shitmail
+sudo chown shitmail:shitmail /var/lib/shitmail
 ```
 
 #### 3. Create environment file
 
 ```bash
-sudo tee /etc/mailtub.env << 'EOF'
+sudo tee /etc/shitmail.env << 'EOF'
 PORT=8080
 SMTP_PORT=2525
 MAILTUB_DOMAIN=mail.example.com
-DATABASE_PATH=/var/lib/mailtub/mailtub.db
+DATABASE_PATH=/var/lib/shitmail/shitmail.db
 MAILBOX_TTL=24h
 ADMIN_PASSWORD=changeme_use_openssl_rand_hex_32
 LOG_LEVEL=info
 EOF
-sudo chmod 600 /etc/mailtub.env
+sudo chmod 600 /etc/shitmail.env
 ```
 
 #### 4. Create systemd service
 
 ```ini
-# /etc/systemd/system/mailtub.service
+# /etc/systemd/system/shitmail.service
 [Unit]
-Description=MailTub — self-hosted disposable email
+Description=shitmail — self-hosted disposable email
 After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-User=mailtub
-Group=mailtub
-ExecStart=/usr/local/bin/mailtub
-EnvironmentFile=/etc/mailtub.env
+User=shitmail
+Group=shitmail
+ExecStart=/usr/local/bin/shitmail
+EnvironmentFile=/etc/shitmail.env
 Restart=always
 RestartSec=5
 # Harden the service
@@ -76,7 +76,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/var/lib/mailtub
+ReadWritePaths=/var/lib/shitmail
 
 [Install]
 WantedBy=multi-user.target
@@ -86,13 +86,13 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now mailtub
-sudo systemctl status mailtub
+sudo systemctl enable --now shitmail
+sudo systemctl status shitmail
 ```
 
 #### 6. Port forwarding (port 25 → 2525)
 
-Standard SMTP uses port 25. Redirect it to MailTub's unprivileged port:
+Standard SMTP uses port 25. Redirect it to shitmail's unprivileged port:
 
 ```bash
 sudo iptables -t nat -A PREROUTING -p tcp --dport 25 -j REDIRECT --to-port 2525
@@ -108,12 +108,12 @@ Podman is a rootless drop-in alternative to Docker. All `docker` commands work w
 
 ```bash
 podman run -d \
-  --name mailtub \
+  --name shitmail \
   -p 8080:8080 \
   -p 2525:2525 \
   -e MAILTUB_DOMAIN=mail.example.com \
-  -v mailtub_data:/data \
-  ghcr.io/dml-labs/mailtub:latest
+  -v shitmail_data:/data \
+  shitmail:latest
 ```
 
 ### Podman Compose
@@ -126,11 +126,11 @@ podman-compose up -d
 ### Systemd socket activation (rootless, auto-start)
 
 ```bash
-podman generate systemd --name mailtub --new --files
+podman generate systemd --name shitmail --new --files
 mkdir -p ~/.config/systemd/user
-cp container-mailtub.service ~/.config/systemd/user/
+cp container-shitmail.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now container-mailtub
+systemctl --user enable --now container-shitmail
 loginctl enable-linger $USER
 ```
 
@@ -142,15 +142,15 @@ Supports **Intel (x86-64)** and **Apple Silicon (M1/M2/M3/M4)** — no Rosetta r
 
 ```bash
 # Apple Silicon
-curl -L https://github.com/dml-labs/mailtub/releases/latest/download/mailtub_darwin_arm64.tar.gz \
+curl -L https://github.com/marc-schuetze/shitmail/releases/latest/download/shitmail_darwin_arm64.tar.gz \
   | tar -xz -C /usr/local/bin
 
 # Intel Mac
-curl -L https://github.com/dml-labs/mailtub/releases/latest/download/mailtub_darwin_amd64.tar.gz \
+curl -L https://github.com/marc-schuetze/shitmail/releases/latest/download/shitmail_darwin_amd64.tar.gz \
   | tar -xz -C /usr/local/bin
 
-chmod +x /usr/local/bin/mailtub
-mailtub
+chmod +x /usr/local/bin/shitmail
+shitmail
 ```
 
 Open [http://localhost:8080](http://localhost:8080). Visit `/admin` to create your admin password on first run.
@@ -158,55 +158,55 @@ Open [http://localhost:8080](http://localhost:8080). Visit `/admin` to create yo
 Or use the one-line installer (auto-detects Intel vs Apple Silicon):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dml-labs/mailtub/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/marc-schuetze/shitmail/main/install.sh | bash
 ```
 
 ### Run as a launchd service (auto-start on login)
 
 ```bash
-mkdir -p ~/.mailtub
-cat > ~/Library/LaunchAgents/com.dmllabs.mailtub.plist << 'EOF'
+mkdir -p ~/.shitmail
+cat > ~/Library/LaunchAgents/com.dmllabs.shitmail.plist << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key>             <string>com.dmllabs.mailtub</string>
-  <key>ProgramArguments</key> <array><string>/usr/local/bin/mailtub</string></array>
+  <key>Label</key>             <string>com.dmllabs.shitmail</string>
+  <key>ProgramArguments</key> <array><string>/usr/local/bin/shitmail</string></array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PORT</key>          <string>8080</string>
     <key>SMTP_PORT</key>     <string>2525</string>
-    <key>DATABASE_PATH</key> <string>/Users/YOU/.mailtub/mailtub.db</string>
+    <key>DATABASE_PATH</key> <string>/Users/YOU/.shitmail/shitmail.db</string>
   </dict>
   <key>RunAtLoad</key> <true/>
   <key>KeepAlive</key> <true/>
-  <key>StandardOutPath</key>   <string>/tmp/mailtub.log</string>
-  <key>StandardErrorPath</key> <string>/tmp/mailtub.log</string>
+  <key>StandardOutPath</key>   <string>/tmp/shitmail.log</string>
+  <key>StandardErrorPath</key> <string>/tmp/shitmail.log</string>
 </dict>
 </plist>
 EOF
 
-launchctl load ~/Library/LaunchAgents/com.dmllabs.mailtub.plist
+launchctl load ~/Library/LaunchAgents/com.dmllabs.shitmail.plist
 ```
 
 ---
 
 ## Windows 10 / 11
 
-MailTub ships a native Windows binary — no WSL, no Cygwin required.
+shitmail ships a native Windows binary — no WSL, no Cygwin required.
 
 **PowerShell (run as Administrator):**
 
 ```powershell
 # Download and extract
-$ver = (Invoke-RestMethod "https://api.github.com/repos/dml-labs/mailtub/releases/latest").tag_name
-$url = "https://github.com/dml-labs/mailtub/releases/download/$ver/mailtub_windows_amd64.zip"
-Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\mailtub.zip"
-Expand-Archive -Path "$env:TEMP\mailtub.zip" -DestinationPath "C:\mailtub" -Force
+$ver = (Invoke-RestMethod "https://api.github.com/repos/marc-schuetze/shitmail/releases/latest").tag_name
+$url = "https://github.com/marc-schuetze/shitmail/releases/download/$ver/shitmail_windows_amd64.zip"
+Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\shitmail.zip"
+Expand-Archive -Path "$env:TEMP\shitmail.zip" -DestinationPath "C:\shitmail" -Force
 
 # Run
-cd C:\mailtub
-.\mailtub.exe
+cd C:\shitmail
+.\shitmail.exe
 ```
 
 Open [http://localhost:8080](http://localhost:8080). Visit `/admin` to create your admin password.
@@ -216,41 +216,41 @@ Open [http://localhost:8080](http://localhost:8080). Visit `/admin` to create yo
 ```powershell
 $env:PORT="8080"
 $env:MAILTUB_DOMAIN="mail.example.com"
-$env:DATABASE_PATH="C:\mailtub\data\mailtub.db"
-.\mailtub.exe
+$env:DATABASE_PATH="C:\shitmail\data\shitmail.db"
+.\shitmail.exe
 ```
 
 ### Run as a Windows Service (auto-start, Task Scheduler)
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "C:\mailtub\data"
+New-Item -ItemType Directory -Force -Path "C:\shitmail\data"
 
-$action   = New-ScheduledTaskAction -Execute "C:\mailtub\mailtub.exe"
+$action   = New-ScheduledTaskAction -Execute "C:\shitmail\shitmail.exe"
 $trigger  = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-Register-ScheduledTask -TaskName "MailTub" `
+Register-ScheduledTask -TaskName "shitmail" `
   -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force
-Start-ScheduledTask -TaskName "MailTub"
+Start-ScheduledTask -TaskName "shitmail"
 ```
 
 ### Windows Firewall
 
 ```powershell
-New-NetFirewallRule -DisplayName "MailTub HTTP" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
-New-NetFirewallRule -DisplayName "MailTub SMTP" -Direction Inbound -Protocol TCP -LocalPort 2525 -Action Allow
+New-NetFirewallRule -DisplayName "shitmail HTTP" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
+New-NetFirewallRule -DisplayName "shitmail SMTP" -Direction Inbound -Protocol TCP -LocalPort 2525 -Action Allow
 ```
 
 ---
 
 ## Android (Termux)
 
-Run MailTub on your Android phone or tablet via [Termux](https://termux.dev/).
+Run shitmail on your Android phone or tablet via [Termux](https://termux.dev/).
 
 ```bash
 pkg update && pkg install curl tar
-curl -fsSL https://raw.githubusercontent.com/dml-labs/mailtub/main/install.sh | bash
-mailtub
+curl -fsSL https://raw.githubusercontent.com/marc-schuetze/shitmail/main/install.sh | bash
+shitmail
 ```
 
 Open `http://localhost:8080` in your mobile browser.
@@ -263,15 +263,15 @@ Open `http://localhost:8080` in your mobile browser.
 
 ```bash
 docker run -d \
-  --name mailtub \
+  --name shitmail \
   --restart unless-stopped \
   -p 8080:8080 \
   -p 2525:2525 \
   -e MAILTUB_DOMAIN=mail.example.com \
   -e ADMIN_PASSWORD=$(openssl rand -hex 32) \
-  -e DATABASE_PATH=/data/mailtub.db \
-  -v mailtub_data:/data \
-  ghcr.io/dml-labs/mailtub:latest
+  -e DATABASE_PATH=/data/shitmail.db \
+  -v shitmail_data:/data \
+  shitmail:latest
 ```
 
 ---
@@ -283,8 +283,8 @@ docker run -d \
 version: '3.9'
 
 services:
-  mailtub:
-    image: ghcr.io/dml-labs/mailtub:latest
+  shitmail:
+    image: shitmail:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -293,13 +293,13 @@ services:
       PORT: "8080"
       SMTP_PORT: "2525"
       MAILTUB_DOMAIN: mail.example.com
-      DATABASE_PATH: /data/mailtub.db
+      DATABASE_PATH: /data/shitmail.db
       MAILBOX_TTL: 24h
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       API_KEY: ${API_KEY}
       LOG_LEVEL: info
     volumes:
-      - mailtub_data:/data
+      - shitmail_data:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/health"]
       interval: 30s
@@ -308,7 +308,7 @@ services:
       start_period: 10s
 
 volumes:
-  mailtub_data:
+  shitmail_data:
 ```
 
 ```bash
@@ -321,10 +321,10 @@ docker compose up -d
 
 ## Nginx Reverse Proxy
 
-Drop this config into `/etc/nginx/sites-available/mailtub` and symlink it. Works with Certbot / Cloudflare for TLS.
+Drop this config into `/etc/nginx/sites-available/shitmail` and symlink it. Works with Certbot / Cloudflare for TLS.
 
 ```nginx
-upstream mailtub {
+upstream shitmail {
     server 127.0.0.1:8080;
     keepalive 32;
 }
@@ -361,7 +361,7 @@ server {
 
     # WebSocket — must be proxied with upgrade headers
     location /ws {
-        proxy_pass         http://mailtub;
+        proxy_pass         http://shitmail;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade $http_upgrade;
         proxy_set_header   Connection "upgrade";
@@ -371,7 +371,7 @@ server {
 
     # API + SPA frontend
     location / {
-        proxy_pass         http://mailtub;
+        proxy_pass         http://shitmail;
         proxy_http_version 1.1;
         proxy_set_header   Host $host;
         proxy_set_header   X-Real-IP $remote_addr;
@@ -385,7 +385,7 @@ server {
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/mailtub /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/shitmail /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -401,10 +401,10 @@ sudo certbot --nginx -d mail.example.com
 ## Fly.io
 
 ```bash
-fly launch --name mailtub --region iad
+fly launch --name shitmail --region iad
 fly secrets set ADMIN_PASSWORD=$(openssl rand -hex 32)
-fly secrets set MAILTUB_DOMAIN=mailtub.fly.dev
-fly volumes create mailtub_data --size 1
+fly secrets set MAILTUB_DOMAIN=shitmail.fly.dev
+fly volumes create shitmail_data --size 1
 fly deploy
 ```
 
@@ -426,7 +426,7 @@ fly deploy
     port = 443
 
 [mounts]
-  source = "mailtub_data"
+  source = "shitmail_data"
   destination = "/data"
 ```
 
@@ -435,17 +435,17 @@ fly deploy
 ## Building from Source
 
 ```bash
-git clone https://github.com/dml-labs/mailtub
-cd mailtub
+git clone https://github.com/marc-schuetze/shitmail
+cd shitmail
 
 # 1. Build the React frontend (output embedded into the binary)
 cd web && pnpm install --ignore-workspace && pnpm build && cd ..
 
 # 2. Build the Go binary
-go build -buildvcs=false -ldflags="-s -w" -o bin/mailtub ./cmd/mailtub
+go build -buildvcs=false -ldflags="-s -w" -o bin/shitmail ./cmd/shitmail
 
 # 3. Run
-./bin/mailtub
+./bin/shitmail
 ```
 
 Requirements: Go 1.25+, Node.js 22+, pnpm 10+
@@ -457,15 +457,15 @@ Requirements: Go 1.25+, Node.js 22+, pnpm 10+
 ### Binary
 
 ```bash
-curl -L https://github.com/dml-labs/mailtub/releases/latest/download/mailtub_linux_amd64.tar.gz \
+curl -L https://github.com/marc-schuetze/shitmail/releases/latest/download/shitmail_linux_amd64.tar.gz \
   | tar -xz -C /usr/local/bin
-sudo systemctl restart mailtub
+sudo systemctl restart shitmail
 ```
 
 ### Docker
 
 ```bash
-docker pull ghcr.io/dml-labs/mailtub:latest
+docker pull shitmail:latest
 docker compose up -d --force-recreate
 ```
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/dml-labs/mailtub/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/domain"
 )
 
 // urlParam is defined in mailbox.go and shared across the handler package.
@@ -145,19 +145,9 @@ func (h *EmailHandler) GetAttachment(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(att.Data)
 }
 
-// resolveMailbox looks up the mailbox by URL param and writes a 404 if missing.
+// resolveMailbox looks up the mailbox by URL param, owner-checked.
 func (h *EmailHandler) resolveMailbox(w http.ResponseWriter, r *http.Request) (*domain.Mailbox, bool) {
-	address := urlParam(r, "address")
-	mb, err := h.mailboxes.FindByAddress(r.Context(), address)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "database error")
-		return nil, false
-	}
-	if mb == nil || mb.IsExpired() {
-		writeError(w, http.StatusNotFound, "mailbox not found or expired")
-		return nil, false
-	}
-	return mb, true
+	return ResolveOwnedMailbox(w, r, h.mailboxes)
 }
 
 func queryInt(r *http.Request, key string, def int) int {

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, formatBytes } from '@/lib/utils'
-import { downloadAttachment, downloadEmailEML } from '@/api/client'
+import { downloadAttachment, downloadEmailEML, proxyUrl } from '@/api/client'
 import type { Email } from '@/types'
 
 interface Props {
@@ -26,11 +26,26 @@ function extractDomain(from: string | null | undefined): string | null {
   return match ? match[1] : null
 }
 
-function injectBlockerCSS(html: string): string {
-  const css = `img[src^="http"],img[src^="https"],img[src^="//"]{display:none!important}[style*="background-image"]{background-image:none!important}`
-  const styleTag = `<style id="__mt_blocker__">${css}</style>`
-  if (/<head[\s>]/i.test(html)) return html.replace(/<head([\s>])/i, `<head$1${styleTag}`)
-  return styleTag + html
+// Browser-enforced: a CSP meta tag inside the sandboxed document. CSS hiding
+// alone does not stop the fetch, so tracking pixels would still fire.
+const CSP_BLOCKED = "default-src 'none'; img-src data: cid:; style-src 'unsafe-inline'; font-src data:"
+const CSP_PROXIED = "default-src 'none'; img-src 'self' data: cid:; style-src 'unsafe-inline'; font-src data:"
+
+function injectCSP(html: string, policy: string): string {
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}">`
+  if (/<head[\s>]/i.test(html)) return html.replace(/<head([\s>])/i, `<head$1${meta}`)
+  return `<head>${meta}</head>` + html
+}
+
+// Rewrites every remote image URL to the server-side proxy so the sender
+// only ever sees this server. Also covers CSS url(...) backgrounds.
+function proxifyRemoteImages(html: string): string {
+  const rewrite = (u: string) => proxyUrl(u.startsWith('//') ? 'https:' + u : u)
+  return html
+    .replace(/(<img\b[^>]*?\ssrc\s*=\s*)(["']?)((?:https?:)?\/\/[^"'\s>]+)\2/gi,
+      (_m, pre: string, q: string, u: string) => `${pre}${q}${rewrite(u)}${q}`)
+    .replace(/url\(\s*(["']?)((?:https?:)?\/\/[^"')\s]+)\1\s*\)/gi,
+      (_m, q: string, u: string) => `url(${q}${rewrite(u)}${q})`)
 }
 
 export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRemoteImages }: Props) {
@@ -198,7 +213,9 @@ export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRem
             srcDoc={(() => {
               const base = email.bodyHtml ||
                 '<html><body style="font-family:system-ui,sans-serif;color:#64748b;padding:32px 24px;background:#fff;font-size:14px;line-height:1.6">No HTML content for this email.</body></html>'
-              return blockRemoteImages ? injectBlockerCSS(base) : base
+              return blockRemoteImages
+                ? injectCSP(base, CSP_BLOCKED)
+                : injectCSP(proxifyRemoteImages(base), CSP_PROXIED)
             })()}
             sandbox="allow-same-origin"
             className="w-full h-full border-0 bg-white"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/dml-labs/mailtub/internal/cli"
+	"github.com/marc-schuetze/shitmail/internal/cli"
 )
 
 // wsMessage mirrors the server-side ws.ServerMessage for JSON decoding.
@@ -23,9 +23,9 @@ type wsMessage struct {
 
 func runWatch(args []string) {
 	fs := flag.NewFlagSet("watch", flag.ExitOnError)
-	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "MailTub server URL")
+	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "shitmail server URL")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub watch <address> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail watch <address> [flags]")
 		fmt.Fprintln(os.Stderr, "\nStream new emails to stdout in real time via WebSocket.")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()
@@ -50,7 +50,7 @@ func runWatch(args []string) {
 	yellow := "\033[33m"
 	sep := strings.Repeat("─", 72)
 
-	fmt.Printf("\n%s%sMailTub watch%s %s%s%s\n", bold, violet, reset, bold, address, reset)
+	fmt.Printf("\n%s%sshitmail watch%s %s%s%s\n", bold, violet, reset, bold, address, reset)
 	fmt.Printf("%sConnecting to %s …%s\n\n", dim, wsURL, reset)
 
 	var conn *websocket.Conn
@@ -136,7 +136,7 @@ func runWatch(args []string) {
 				fmt.Println()
 			}
 
-			fmt.Printf("%sTo read: mailtub read %s %s%s\n\n", dim, address, e.ID, reset)
+			fmt.Printf("%sTo read: shitmail read %s %s%s\n\n", dim, address, e.ID, reset)
 			fmt.Printf("%s%s%s\n\n", yellow, strings.Repeat("═", 72), reset)
 
 		case "email_delete":

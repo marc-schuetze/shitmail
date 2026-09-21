@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
-        name: 'MailTub',
-        short_name: 'MailTub',
+        name: 'shitmail',
+        short_name: 'shitmail',
         description: 'Self-hosted disposable email service by DML Labs',
         start_url: '/',
         display: 'standalone',

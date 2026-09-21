@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dml-labs/mailtub/internal/config"
+	"github.com/marc-schuetze/shitmail/internal/config"
 )
 
 // configResponse is the sanitised view of the runtime config — no secrets.

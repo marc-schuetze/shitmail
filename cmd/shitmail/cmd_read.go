@@ -7,15 +7,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dml-labs/mailtub/internal/cli"
+	"github.com/marc-schuetze/shitmail/internal/cli"
 )
 
 func runRead(args []string) {
 	fs := flag.NewFlagSet("read", flag.ExitOnError)
-	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "MailTub server URL")
+	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "shitmail server URL")
 	showHeaders := fs.Bool("headers", false, "print raw headers")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub read <address> <email-id> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail read <address> <email-id> [flags]")
 		fmt.Fprintln(os.Stderr, "\nDisplay the full content of an email.")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()

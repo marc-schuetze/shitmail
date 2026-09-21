@@ -14,6 +14,7 @@ export interface MailboxTab {
 
 export interface UseMailboxTabsReturn {
   tabs: MailboxTab[]
+  initializing: boolean
   activeTabId: string
   activeTab: MailboxTab | null
   unreadCount: number
@@ -22,6 +23,7 @@ export interface UseMailboxTabsReturn {
   setActiveTab: (id: string) => void
   replaceTabMailbox: (tabId: string, localPart?: string, ttlHours?: number) => Promise<void>
   deleteTabMailbox: (tabId: string) => Promise<void>
+  setTabTTL: (tabId: string, ttlHours: number) => Promise<void>
   refreshTab: (tabId: string) => Promise<void>
   addEmailToTab: (tabId: string, email: Email) => void
   removeEmailFromTab: (tabId: string, emailId: string) => void
@@ -30,38 +32,19 @@ export interface UseMailboxTabsReturn {
 }
 
 // ─── Storage ─────────────────────────────────────────────────────────────────
+// Mailboxes live server-side (per SSO user); only the active selection is local.
 
-const STORAGE_KEY = 'mailtub_tabs_v2'
-const MAX_TABS = 5
+const ACTIVE_KEY = 'shitmail_active_tab'
 
-interface SavedTab { id: string; address: string }
-interface PersistedState { tabs: SavedTab[]; activeTabId: string }
-
-function loadPersisted(): PersistedState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as PersistedState
-  } catch {
-    return null
-  }
-}
-
-function savePersisted(tabs: MailboxTab[], activeTabId: string) {
-  const saved: PersistedState = {
-    tabs: tabs
-      .filter(t => t.mailbox !== null)
-      .map(t => ({ id: t.id, address: t.mailbox!.address })),
-    activeTabId,
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved))
-}
+/** activeTabId value for the merged "all mailboxes" view. */
+export const ALL_TABS = '__all__'
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useMailboxTabs(): UseMailboxTabsReturn {
   const [tabs, setTabs] = useState<MailboxTab[]>([])
   const [activeTabId, setActiveTabIdState] = useState('')
+  const [initializing, setInitializing] = useState(true)
   const didInit = useRef(false)
 
   // Stable ref so callbacks don't need tabs/activeTabId in deps
@@ -70,72 +53,35 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
   const activeTabIdRef = useRef(activeTabId)
   activeTabIdRef.current = activeTabId
 
-  // Persist whenever tabs or active changes
   useEffect(() => {
-    if (didInit.current && tabs.length > 0) {
-      savePersisted(tabs, activeTabId)
-    }
-  }, [tabs, activeTabId])
+    if (activeTabId) try { localStorage.setItem(ACTIVE_KEY, activeTabId) } catch { /* ignore */ }
+  }, [activeTabId])
 
-  // ── Init ──────────────────────────────────────────────────────────────────
+  // ── Init: load the user's mailboxes from the server ───────────────────────
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
 
     async function init() {
-      const saved = loadPersisted()
-      if (saved && saved.tabs.length > 0) {
-        // Create loading placeholders immediately
-        const placeholders: MailboxTab[] = saved.tabs.map(s => ({
-          id: s.id,
-          mailbox: null,
-          emails: [],
-          loading: true,
-          wsConnected: false,
-        }))
-        setTabs(placeholders)
-
-        const validActiveId = saved.tabs.find(t => t.id === saved.activeTabId)
-          ? saved.activeTabId
-          : saved.tabs[0].id
-        setActiveTabIdState(validActiveId)
-
-        // Restore each tab in parallel
-        const restored = await Promise.all(
-          saved.tabs.map(async (s): Promise<MailboxTab> => {
-            try {
-              const { mailbox } = await api.getMailbox(s.address)
-              const { emails } = await api.listEmails(s.address)
-              return { id: s.id, mailbox, emails: emails ?? [], loading: false, wsConnected: false }
-            } catch {
-              // Expired or gone — create a fresh mailbox for this slot
-              try {
-                const mb = await api.createMailbox()
-                return { id: s.id, mailbox: mb, emails: [], loading: false, wsConnected: false }
-              } catch {
-                return { id: s.id, mailbox: null, emails: [], loading: false, wsConnected: false }
-              }
-            }
+      try {
+        const { mailboxes } = await api.listMailboxes()
+        const loaded = await Promise.all(
+          (mailboxes ?? []).map(async (mailbox): Promise<MailboxTab> => {
+            let emails: Email[] = []
+            try { emails = (await api.listEmails(mailbox.address)).emails ?? [] } catch { /* empty */ }
+            return { id: mailbox.id, mailbox, emails, loading: false, wsConnected: false }
           }),
         )
-
-        const live = restored.filter(t => t.mailbox !== null)
-        if (live.length === 0) {
-          // All failed — create one fresh tab
-          const fresh = await createFreshTab()
-          setTabs([fresh])
-          setActiveTabIdState(fresh.id)
+        setTabs(loaded)
+        const saved = localStorage.getItem(ACTIVE_KEY)
+        if (saved === ALL_TABS || (!saved && loaded.length > 1)) {
+          setActiveTabIdState(ALL_TABS)
         } else {
-          setTabs(live)
-          if (!live.find(t => t.id === validActiveId)) {
-            setActiveTabIdState(live[0].id)
-          }
+          const active = loaded.find(t => t.id === saved) ?? loaded[0]
+          if (active) setActiveTabIdState(active.id)
         }
-      } else {
-        // Fresh session
-        const fresh = await createFreshTab()
-        setTabs([fresh])
-        setActiveTabIdState(fresh.id)
+      } finally {
+        setInitializing(false)
       }
     }
 
@@ -144,12 +90,6 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  async function createFreshTab(localPart?: string, ttlHours?: number): Promise<MailboxTab> {
-    const id = crypto.randomUUID()
-    const mb = await api.createMailbox(localPart, ttlHours)
-    return { id, mailbox: mb, emails: [], loading: false, wsConnected: false }
-  }
-
   const mutateTab = useCallback((tabId: string, updater: (t: MailboxTab) => MailboxTab) => {
     setTabs(prev => prev.map(t => (t.id === tabId ? updater(t) : t)))
   }, [])
@@ -157,32 +97,16 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
   // ── Public API ────────────────────────────────────────────────────────────
 
   const addTab = useCallback(async (localPart?: string, ttlHours?: number) => {
-    if (tabsRef.current.length >= MAX_TABS) return
-    const id = crypto.randomUUID()
-    const placeholder: MailboxTab = { id, mailbox: null, emails: [], loading: true, wsConnected: false }
-    setTabs(prev => [...prev, placeholder])
-    setActiveTabIdState(id)
-    try {
-      const mb = await api.createMailbox(localPart, ttlHours)
-      setTabs(prev => prev.map(t => t.id === id ? { ...t, mailbox: mb, loading: false } : t))
-    } catch (err) {
-      setTabs(prev => prev.filter(t => t.id !== id))
-      if (tabsRef.current.length > 0) setActiveTabIdState(tabsRef.current[0].id)
-      throw err
-    }
+    const mb = await api.createMailbox(localPart, ttlHours)
+    setTabs(prev => [...prev, { id: mb.id, mailbox: mb, emails: [], loading: false, wsConnected: false }])
+    setActiveTabIdState(mb.id)
   }, [])
 
+  // Removes the tab locally; the mailbox itself is deleted by deleteTabMailbox.
   const closeTab = useCallback((id: string) => {
-    setTabs(prev => {
-      const next = prev.filter(t => t.id !== id)
-      if (next.length === 0) return prev // keep at least one
-      return next
-    })
-    setActiveTabIdState(prev => {
-      if (prev !== id) return prev
-      const remaining = tabsRef.current.filter(t => t.id !== id)
-      return remaining.length > 0 ? remaining[0].id : prev
-    })
+    const remaining = tabsRef.current.filter(t => t.id !== id)
+    setTabs(remaining)
+    setActiveTabIdState(prev => (prev !== id ? prev : remaining[0]?.id ?? ''))
   }, [])
 
   const setActiveTab = useCallback((id: string) => {
@@ -200,14 +124,21 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
     }
   }, [mutateTab])
 
+  // Deletes the mailbox server-side and drops its tab. No replacement is
+  // generated: addresses are explicit, never auto-created.
   const deleteTabMailbox = useCallback(async (tabId: string) => {
     const tab = tabsRef.current.find(t => t.id === tabId)
     if (!tab?.mailbox) return
-    try {
-      await api.deleteMailbox(tab.mailbox.address)
-    } catch { /* ignore */ }
-    await replaceTabMailbox(tabId)
-  }, [replaceTabMailbox])
+    await api.deleteMailbox(tab.mailbox.address)
+    closeTab(tabId)
+  }, [closeTab])
+
+  const setTabTTL = useCallback(async (tabId: string, ttlHours: number) => {
+    const tab = tabsRef.current.find(t => t.id === tabId)
+    if (!tab?.mailbox) return
+    const mb = await api.setMailboxTTL(tab.mailbox.address, ttlHours)
+    mutateTab(tabId, t => ({ ...t, mailbox: mb }))
+  }, [mutateTab])
 
   const refreshTab = useCallback(async (tabId: string) => {
     const tab = tabsRef.current.find(t => t.id === tabId)
@@ -253,6 +184,7 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
 
   return {
     tabs,
+    initializing,
     activeTabId,
     activeTab,
     unreadCount,
@@ -261,6 +193,7 @@ export function useMailboxTabs(): UseMailboxTabsReturn {
     setActiveTab,
     replaceTabMailbox,
     deleteTabMailbox,
+    setTabTTL,
     refreshTab,
     addEmailToTab,
     removeEmailFromTab,

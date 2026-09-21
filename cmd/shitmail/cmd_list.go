@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dml-labs/mailtub/internal/cli"
+	"github.com/marc-schuetze/shitmail/internal/cli"
 )
 
 func runList(args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
-	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "MailTub server URL")
+	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "shitmail server URL")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub list <address> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail list <address> [flags]")
 		fmt.Fprintln(os.Stderr, "\nList all emails in a mailbox.")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()
@@ -69,7 +69,7 @@ func runList(args []string) {
 			unread, shortID, from, subject, age)
 	}
 	fmt.Println()
-	fmt.Printf("%sTo read an email: mailtub read %s <id>%s\n\n", dim, address, reset)
+	fmt.Printf("%sTo read an email: shitmail read %s <id>%s\n\n", dim, address, reset)
 }
 
 func truncate(s string, n int) string {

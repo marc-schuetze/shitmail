@@ -1,5 +1,5 @@
-// Package cli provides a typed HTTP + WebSocket client for MailTub's REST API.
-// It is used by CLI subcommands to communicate with any MailTub server.
+// Package cli provides a typed HTTP + WebSocket client for shitmail's REST API.
+// It is used by CLI subcommands to communicate with any shitmail server.
 package cli
 
 import (
@@ -56,7 +56,7 @@ type EmailListResponse struct {
 
 // ── HTTP client ───────────────────────────────────────────────────────────────
 
-// Client is a typed HTTP client for the MailTub REST API.
+// Client is a typed HTTP client for the shitmail REST API.
 type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client

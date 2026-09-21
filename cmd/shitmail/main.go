@@ -1,19 +1,19 @@
-// MailTub — self-hosted disposable email service.
+// shitmail — self-hosted disposable email service.
 // Copyright (c) 2026 DML Labs. Apache 2.0 License.
 //
 // Usage:
 //
-//      mailtub                       # start the server (default)
-//      mailtub serve [flags]         # start the server explicitly
-//      mailtub new [flags]           # create a mailbox and print its address
-//      mailtub list <address> [flags]# list emails in a mailbox
-//      mailtub read <address> <id>   # display a single email
-//      mailtub watch <address> [flags]# stream new emails in real time
-//      mailtub send <to> [flags]     # send a test email via SMTP
-//      mailtub version               # print version and runtime info
-//      mailtub help                  # print this help
+//      shitmail                       # start the server (default)
+//      shitmail serve [flags]         # start the server explicitly
+//      shitmail new [flags]           # create a mailbox and print its address
+//      shitmail list <address> [flags]# list emails in a mailbox
+//      shitmail read <address> <id>   # display a single email
+//      shitmail watch <address> [flags]# stream new emails in real time
+//      shitmail send <to> [flags]     # send a test email via SMTP
+//      shitmail version               # print version and runtime info
+//      shitmail help                  # print this help
 
-//go:generate goversioninfo -icon=../../assets/brand/mailtub-logo-512.ico -manifest=mailtub.exe.manifest
+//go:generate goversioninfo -icon=../../assets/brand/shitmail-logo-512.ico -manifest=shitmail.exe.manifest
 package main
 
 import (
@@ -24,7 +24,7 @@ import (
 
 // version, commit, and date are set at build time via ldflags:
 //
-//	go build -ldflags "-X main.version=v1.0.0 -X main.commit=abc1234 -X main.date=2025-01-01" ./cmd/mailtub
+//	go build -ldflags "-X main.version=v1.0.0 -X main.commit=abc1234 -X main.date=2025-01-01" ./cmd/shitmail
 //
 // Default to "dev" / "unknown" when built without release tags.
 var (
@@ -47,6 +47,7 @@ var commands = map[string]subcommand{
 	"watch":     runWatch,
 	"send":      runSend,
 	"version":   runVersion,
+	"health":    runHealth,
 	"help":      runHelp,
 	"-h":        runHelp,
 	"--help":    runHelp,
@@ -73,18 +74,18 @@ func main() {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "mailtub: unknown command %q\n\n", verb)
+	fmt.Fprintf(os.Stderr, "shitmail: unknown command %q\n\n", verb)
 	printUsage()
 	os.Exit(1)
 }
 
 func runVersion(_ []string) {
-	fmt.Printf("mailtub %s\n", version)
+	fmt.Printf("shitmail %s\n", version)
 	fmt.Printf("Go:       %s\n", runtime.Version())
 	fmt.Printf("OS/Arch:  %s/%s\n", runtime.GOOS, runtime.GOARCH)
 	fmt.Printf("Commit:   %s\n", commit)
 	fmt.Printf("Built:    %s\n", date)
-	fmt.Printf("Source:   https://github.com/dml-labs/mailtub\n")
+	fmt.Printf("Source:   https://github.com/marc-schuetze/shitmail\n")
 }
 
 func runHelp(_ []string) {
@@ -92,13 +93,13 @@ func runHelp(_ []string) {
 }
 
 func printUsage() {
-	fmt.Print(`MailTub — self-hosted disposable email (https://github.com/dml-labs/mailtub)
+	fmt.Print(`shitmail — self-hosted disposable email (https://github.com/marc-schuetze/shitmail)
 
 USAGE
-  mailtub [command] [flags]
+  shitmail [command] [flags]
 
 COMMANDS
-  serve       Start the MailTub server (HTTP + SMTP + WebSocket)
+  serve       Start the shitmail server (HTTP + SMTP + WebSocket)
   new         Create a temporary mailbox and print its address
   list        List emails in a mailbox
   read        Display a single email
@@ -112,10 +113,10 @@ FLAGS (serve)
   --verbose   Alias for --debug
   --config    Path to a .env file (default: looks for .env in CWD)
 
-Run "mailtub <command> -h" for command-specific flags.
+Run "shitmail <command> -h" for command-specific flags.
 
 With no command given, "serve" is the default.
 
-Environment: https://github.com/dml-labs/mailtub/blob/main/docs/configuration.md
+Environment: https://github.com/marc-schuetze/shitmail/blob/main/docs/configuration.md
 `)
 }

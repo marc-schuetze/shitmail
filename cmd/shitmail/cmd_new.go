@@ -6,16 +6,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/dml-labs/mailtub/internal/cli"
+	"github.com/marc-schuetze/shitmail/internal/cli"
 )
 
 func runNew(args []string) {
 	fs := flag.NewFlagSet("new", flag.ExitOnError)
-	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "MailTub server URL")
+	server := fs.String("server", envOr("MAILTUB_SERVER", "http://localhost:3000"), "shitmail server URL")
 	localPart := fs.String("local-part", "", "custom local part (e.g. myname)")
 	quiet := fs.Bool("q", false, "print address only, no decorations")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: mailtub new [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: shitmail new [flags]")
 		fmt.Fprintln(os.Stderr, "\nCreate a new temporary mailbox and print its address.")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		fs.PrintDefaults()
@@ -44,7 +44,7 @@ func runNew(args []string) {
 	fmt.Printf("  %sExpires%s   in %s\n", dim, reset, formatDuration(ttl))
 	fmt.Printf("  %sID%s        %s%s%s\n\n", dim, reset, dim, mb.ID, reset)
 	fmt.Printf("%sTo watch for incoming mail:%s\n", dim, reset)
-	fmt.Printf("  mailtub watch %s --server %s\n\n", mb.Address, *server)
+	fmt.Printf("  shitmail watch %s --server %s\n\n", mb.Address, *server)
 }
 
 func formatDuration(d time.Duration) string {

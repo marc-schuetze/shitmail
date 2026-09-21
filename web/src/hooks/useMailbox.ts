@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import * as api from '@/api/client'
 import type { Email, Mailbox } from '@/types'
 
-const STORAGE_KEY = 'mailtub_address'
+const STORAGE_KEY = 'shitmail_address'
 
 export interface UseMailboxReturn {
   mailbox: Mailbox | null

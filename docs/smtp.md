@@ -1,16 +1,16 @@
 # SMTP Setup
 
-MailTub includes a built-in SMTP server that listens for inbound email. This guide explains how to configure it for production use so real email reaches your mailboxes.
+shitmail includes a built-in SMTP server that listens for inbound email. This guide explains how to configure it for production use so real email reaches your mailboxes.
 
 ---
 
 ## How It Works
 
 1. A sender's mail server does a DNS MX lookup for your domain.
-2. The MX record points to your MailTub server's IP.
+2. The MX record points to your shitmail server's IP.
 3. The sender connects to port 25 (standard SMTP) on your server.
 4. A firewall rule or `iptables` redirect forwards port 25 → your `SMTP_PORT` (default `2525`).
-5. MailTub accepts the message, parses MIME, and pushes it to the matching mailbox via WebSocket.
+5. shitmail accepts the message, parses MIME, and pushes it to the matching mailbox via WebSocket.
 
 ---
 
@@ -58,7 +58,7 @@ dig A  mail.example.com
 
 ## Port Forwarding (Linux)
 
-Standard SMTP uses port 25. Most systems require root to bind to ports below 1024. Instead, run MailTub unprivileged on port 2525 and redirect port 25 with `iptables`:
+Standard SMTP uses port 25. Most systems require root to bind to ports below 1024. Instead, run shitmail unprivileged on port 2525 and redirect port 25 with `iptables`:
 
 ```bash
 # Redirect inbound TCP 25 → 2525
@@ -91,12 +91,12 @@ SMTP_STARTTLS=false      # set true to advertise STARTTLS
 
 ## STARTTLS
 
-MailTub advertises STARTTLS on the SMTP server when `SMTP_STARTTLS=true`. Two modes are supported:
+shitmail advertises STARTTLS on the SMTP server when `SMTP_STARTTLS=true`. Two modes are supported:
 
 ### Auto-generated self-signed cert (dev / testing)
 
 ```bash
-SMTP_STARTTLS=true ./mailtub
+SMTP_STARTTLS=true ./shitmail
 ```
 
 An ephemeral ECDSA-P256 certificate is generated in memory at startup. It will not be trusted by external servers but is useful for local testing.
@@ -107,7 +107,7 @@ An ephemeral ECDSA-P256 certificate is generated in memory at startup. It will n
 SMTP_STARTTLS=true \
   TLS_CERT_FILE=/etc/letsencrypt/live/mail.example.com/fullchain.pem \
   TLS_KEY_FILE=/etc/letsencrypt/live/mail.example.com/privkey.pem \
-  ./mailtub
+  ./shitmail
 ```
 
 #### Getting a certificate with Certbot
@@ -116,9 +116,9 @@ SMTP_STARTTLS=true \
 sudo apt install certbot
 sudo certbot certonly --standalone -d mail.example.com
 
-# Auto-renew hook to reload MailTub
-echo "0 0 * * * root certbot renew --quiet && systemctl reload mailtub" \
-  | sudo tee /etc/cron.d/mailtub-certbot
+# Auto-renew hook to reload shitmail
+echo "0 0 * * * root certbot renew --quiet && systemctl reload shitmail" \
+  | sudo tee /etc/cron.d/shitmail-certbot
 ```
 
 ---
@@ -126,19 +126,19 @@ echo "0 0 * * * root certbot renew --quiet && systemctl reload mailtub" \
 ## Testing SMTP Locally
 
 ```bash
-# 1. Start MailTub
-./mailtub
+# 1. Start shitmail
+./shitmail
 
 # 2. Create a mailbox
-./mailtub new --local-part test
+./shitmail new --local-part test
 
 # 3. Send a test email via CLI
-./mailtub send test@localhost --subject "Hello!"
+./shitmail send test@localhost --subject "Hello!"
 
 # 4. Or send via Python (useful in CI)
 python3 -c "
 import smtplib, email.mime.text
-msg = email.mime.text.MIMEText('Hello MailTub!')
+msg = email.mime.text.MIMEText('Hello shitmail!')
 msg['Subject'] = 'Test'
 msg['From']    = 'sender@example.com'
 msg['To']      = 'test@localhost'
@@ -165,7 +165,7 @@ swaks --to test@mail.example.com --server mail.example.com --tls
 | Port | Protocol | Direction | Purpose |
 |------|----------|-----------|---------|
 | 25   | TCP | Inbound | Standard SMTP (redirect → 2525) |
-| 2525 | TCP | Inbound (localhost) | MailTub SMTP listener |
+| 2525 | TCP | Inbound (localhost) | shitmail SMTP listener |
 | 8080 | TCP | Inbound | HTTP / WebSocket / Admin |
 
 If you use `ufw`:
