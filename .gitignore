@@ -38,3 +38,6 @@ resource.syso
 .cache/
 .local/
 attached_assets/
+
+# local pnpm store created by containerised installs
+web/.pnpm-store/

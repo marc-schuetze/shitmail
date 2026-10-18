@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Inbox, Paperclip, Star } from 'lucide-react'
 import { cn, formatRelativeTime, senderInitial, extractDisplayName } from '@/lib/utils'
 import type { Email } from '@/types'
@@ -9,9 +9,11 @@ interface Props {
   onSelect: (email: Email) => void
   starredIds?: Set<string>
   onToggleStar?: (id: string) => void
+  /** In the merged view: mailbox name to show on each row. */
+  labelFor?: (email: Email) => string | undefined
 }
 
-export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleStar }: Props) {
+export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleStar, labelFor }: Props) {
   if (emails.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 py-12 px-6 text-center select-none">
@@ -41,6 +43,7 @@ export function EmailList({ emails, selectedId, onSelect, starredIds, onToggleSt
             isStarred={starredIds?.has(email.id) ?? false}
             onSelect={onSelect}
             onToggleStar={onToggleStar}
+            label={labelFor?.(email)}
           />
         ))}
       </AnimatePresence>
@@ -60,6 +63,7 @@ function EmailRow({
   isStarred,
   onSelect,
   onToggleStar,
+  label,
 }: {
   email: Email
   index: number
@@ -67,6 +71,7 @@ function EmailRow({
   isStarred: boolean
   onSelect: (email: Email) => void
   onToggleStar?: (id: string) => void
+  label?: string
 }) {
   const displayName  = extractDisplayName(email.from) || email.from
   const initial      = senderInitial(email.from)
@@ -97,7 +102,7 @@ function EmailRow({
         className={cn(
           'size-8 rounded-full shrink-0 flex items-center justify-center',
           'text-[11px] font-bold uppercase tracking-wider',
-          'bg-gradient-to-br ring-1 ring-white/5',
+          'bg-linear-to-br ring-1 ring-white/5',
           avatarGradient(initial),
         )}
         aria-hidden="true"
@@ -125,7 +130,7 @@ function EmailRow({
               <button
                 onClick={handleStarClick}
                 className={cn(
-                  'p-px rounded transition-colors',
+                  'p-px rounded-sm transition-colors',
                   isStarred
                     ? 'text-amber-400'
                     : 'text-muted opacity-0 group-hover:opacity-100 hover:text-amber-400',
@@ -137,6 +142,12 @@ function EmailRow({
             )}
           </div>
         </div>
+
+        {label && (
+          <div className="min-w-0 break-all select-text text-[10px] font-mono text-muted" title={label}>
+            {label}
+          </div>
+        )}
 
         {/* Row 2: subject + unread dot + attachments */}
         <div className="flex items-center gap-1.5">

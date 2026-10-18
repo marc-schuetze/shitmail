@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MailTub are documented here.
+All notable changes to shitmail are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -23,7 +23,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Custom TTL selection: 1h, 6h, 24h (default), 7 days
 - Custom local-part validation (3–32 chars, alphanumeric + hyphen + dot)
 - Multi-tab support — each browser tab maintains its own inbox
-- Tab persistence via `mailtub_tabs_v2` localStorage key
+- Tab persistence via `shitmail_tabs_v2` localStorage key
 
 #### Emails
 - MIME parsing — plain text, HTML, mixed, and alternative content types
@@ -54,12 +54,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `.env` / `.env.example` for local configuration
 
 #### CLI
-- `mailtub new [--local-part NAME]` — create mailbox
-- `mailtub list <address>` — list emails
-- `mailtub read <address> <id>` — read email
-- `mailtub watch <address>` — stream via WebSocket
-- `mailtub send <address> [--starttls]` — send test email
+- `shitmail new [--local-part NAME]` — create mailbox
+- `shitmail list <address>` — list emails
+- `shitmail read <address> <id>` — read email
+- `shitmail watch <address>` — stream via WebSocket
+- `shitmail send <address> [--starttls]` — send test email
 
 ---
 
-[v1.0.0]: https://github.com/dml-labs/mailtub/releases/tag/v1.0.0
+[v1.0.0]: https://github.com/marc-schuetze/shitmail/releases/tag/v1.0.0

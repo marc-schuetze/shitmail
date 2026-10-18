@@ -1,4 +1,4 @@
-// Package domain contains the core business entities and rules for MailTub.
+// Package domain contains the core business entities and rules for shitmail.
 // These types are pure value objects — no framework or infrastructure concerns.
 package domain
 
@@ -19,6 +19,7 @@ type Mailbox struct {
 	Address   string    `json:"address"`
 	LocalPart string    `json:"localPart"`
 	Domain    string    `json:"domain"`
+	Owner     string    `json:"owner"` // SSO uid of the creator; empty = legacy/unowned
 	ExpiresAt time.Time `json:"expiresAt"`
 	CreatedAt time.Time `json:"createdAt"`
 }
@@ -30,7 +31,7 @@ func (m *Mailbox) IsExpired() bool {
 
 // NewMailbox generates a fresh mailbox with a random human-readable local part.
 func NewMailbox(domain string, ttl time.Duration) *Mailbox {
-	return NewMailboxWithLocal(generateLocalPart(), domain, ttl)
+	return NewMailboxWithLocal(RandomLocalPart(), domain, ttl)
 }
 
 // NewMailboxWithLocal creates a mailbox with the given local part.
@@ -84,8 +85,8 @@ var nouns = []string{
 	"root", "seed", "star", "tune", "unit", "void", "wave", "wire",
 }
 
-// generateLocalPart produces a human-readable random string like "swiftbyte4821".
-func generateLocalPart() string {
+// RandomLocalPart produces a human-readable random string like "swiftbyte4821".
+func RandomLocalPart() string {
 	adj := adjectives[rand.Intn(len(adjectives))]
 	noun := nouns[rand.Intn(len(nouns))]
 	num := rand.Intn(9000) + 1000

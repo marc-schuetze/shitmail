@@ -8,9 +8,9 @@ import (
 
 	gosmtp "github.com/emersion/go-smtp"
 
-	"github.com/dml-labs/mailtub/internal/config"
-	"github.com/dml-labs/mailtub/internal/domain"
-	"github.com/dml-labs/mailtub/internal/ws"
+	"github.com/marc-schuetze/shitmail/internal/config"
+	"github.com/marc-schuetze/shitmail/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/ws"
 )
 
 // Backend implements gosmtp.Backend — one instance per running server.
@@ -25,6 +25,7 @@ type Backend struct {
 	maxAttachmentBytes      int64
 	maxTotalAttachmentBytes int64
 	maxBodyBytes            int64
+	dropAttachments         bool
 }
 
 // NewSession creates a fresh session for each incoming SMTP connection.
@@ -32,9 +33,10 @@ func (b *Backend) NewSession(_ *gosmtp.Conn) (gosmtp.Session, error) {
 	return &session{backend: b}, nil
 }
 
-// Server wraps the go-smtp server with MailTub configuration.
+// Server wraps the go-smtp server with shitmail configuration.
 type Server struct {
-	inner *gosmtp.Server
+	inner   *gosmtp.Server
+	backend *Backend
 }
 
 // NewServer builds and configures the SMTP server.
@@ -56,6 +58,7 @@ func NewServer(
 		maxAttachmentBytes:      cfg.MaxAttachmentBytes(),
 		maxTotalAttachmentBytes: cfg.MaxTotalAttachmentBytes(),
 		maxBodyBytes:            cfg.MaxBodyBytes(),
+		dropAttachments:         cfg.DropAttachments,
 	}
 
 	s := gosmtp.NewServer(backend)
@@ -96,8 +99,12 @@ func NewServer(
 		"starttls", cfg.SMTPStartTLS,
 	)
 
-	return &Server{inner: s}
+	return &Server{inner: s, backend: backend}
 }
+
+// Backend exposes the delivery backend so other ingest paths (the IMAP
+// puller) can store messages through the same code as an SMTP session.
+func (s *Server) Backend() *Backend { return s.backend }
 
 // ListenAndServe starts the SMTP server (blocks).
 func (s *Server) ListenAndServe() error {

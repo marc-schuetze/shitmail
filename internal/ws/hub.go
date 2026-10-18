@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dml-labs/mailtub/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/domain"
 )
 
 // Hub manages all active WebSocket clients and routes events to

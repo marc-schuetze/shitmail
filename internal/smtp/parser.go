@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"strings"
 
+	// Register legacy charset decoders for both MIME bodies and encoded headers.
+	_ "github.com/emersion/go-message/charset"
 	"github.com/emersion/go-message/mail"
 )
 
@@ -42,6 +44,9 @@ type ParseOptions struct {
 	// Once exceeded, remaining attachments are skipped.
 	// 0 means unlimited.
 	MaxTotalAttachmentBytes int64
+
+	// DropAttachments discards every attachment part (counted in Skipped).
+	DropAttachments bool
 
 	// MaxBodyBytes caps each text/plain or text/html body part.
 	// Parts that exceed this are truncated with a trailing notice appended.
@@ -125,6 +130,11 @@ func Parse(r io.Reader, opts ParseOptions) (*ParsedEmail, error) {
 			}
 
 		case *mail.AttachmentHeader:
+			if opts.DropAttachments {
+				_, _ = io.Copy(io.Discard, p.Body)
+				parsed.Skipped++
+				continue
+			}
 			ct, _, _ := ph.ContentType()
 			filename, _ := ph.Filename()
 			if filename == "" {

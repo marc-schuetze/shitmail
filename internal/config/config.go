@@ -1,18 +1,19 @@
 // Package config handles all application configuration loaded from
-// environment variables, optional .env files, and an optional mailtub.yaml.
+// environment variables, optional .env files, and an optional shitmail.yaml.
 package config
 
 import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
-// Config holds the complete runtime configuration for MailTub.
+// Config holds the complete runtime configuration for shitmail.
 type Config struct {
 	// HTTP server
 	HTTPPort int
@@ -31,6 +32,21 @@ type Config struct {
 	MaxAttachmentSizeMB  int // per-attachment cap; 0 = use SMTPMaxSize as fallback
 	MaxTotalAttachmentMB int // total accumulated attachment cap; 0 = unlimited
 	MaxBodyKB            int // plain-text + HTML body cap (KB); 0 = unlimited
+	DropAttachments      bool // DROP_ATTACHMENTS: discard every attachment part, keep text/html bodies
+
+	// SSO — identity comes from the reverse proxy (Authentik forward-auth headers).
+	// ADMIN_GROUP: members of this X-Authentik-Groups entry may use the admin API.
+	AdminGroup string
+
+	// IMAP pull — optional. When IMAPHost is set, shitmail logs into that
+	// mailbox and drains it into local storage instead of (or in addition to)
+	// receiving over SMTP. Used where the public relay cannot reach this host.
+	IMAPHost            string        // host or host:port, implicit TLS, default port 993
+	IMAPUser            string
+	IMAPPass            string
+	IMAPMailbox         string        // default INBOX
+	IMAPEnvelopeHeaders []string      // recipient headers, highest priority first
+	IMAPPollInterval    time.Duration // default 60s
 
 	// Database
 	DatabasePath string
@@ -50,7 +66,7 @@ type Config struct {
 	// Admin panel — password is stored as a bcrypt hash in the DB (settings table).
 	// ADMIN_PASSWORD env var overrides the DB hash (for Docker/CI deployments).
 	// When neither is set, the browser first-run wizard handles initial setup.
-	AdminPassword string // ADMIN_PASSWORD env var only; never loaded from mailtub.yaml
+	AdminPassword string // ADMIN_PASSWORD env var only; never loaded from shitmail.yaml
 
 	// API key (optional) — if set, X-API-Key header is required on /api/v1/* endpoints.
 	APIKey string // API_KEY env var; empty = no authentication required
@@ -81,7 +97,7 @@ func (c *Config) MaxBodyBytes() int64 {
 	return 0
 }
 
-// fileConfig is the YAML schema for mailtub.yaml.
+// fileConfig is the YAML schema for shitmail.yaml.
 // Any field set here acts as a fallback when the corresponding env var is absent.
 // Environment variables always take priority over the file.
 type fileConfig struct {
@@ -100,16 +116,18 @@ type fileConfig struct {
 	RedisURL             string `yaml:"redis_url"`
 	LogLevel             string `yaml:"log_level"`
 	APIKey               string `yaml:"api_key"`
+	DropAttachments      *bool  `yaml:"drop_attachments"`
+	AdminGroup           string `yaml:"admin_group"`
 }
 
-// loadYAML reads mailtub.yaml (or the path in MAILTUB_CONFIG) and sets
+// loadYAML reads shitmail.yaml (or the path in MAILTUB_CONFIG) and sets
 // environment variables for any keys that are not already set. This makes
 // env vars always win over the file while keeping the file as a convenient
 // alternative to a long list of exports.
 func loadYAML() {
 	path := os.Getenv("MAILTUB_CONFIG")
 	if path == "" {
-		path = "mailtub.yaml"
+		path = "shitmail.yaml"
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -140,6 +158,10 @@ func loadYAML() {
 	setIfAbsent("REDIS_URL", fc.RedisURL)
 	setIfAbsent("LOG_LEVEL", fc.LogLevel)
 	setIfAbsent("API_KEY", fc.APIKey)
+	if fc.DropAttachments != nil {
+		setIfAbsent("DROP_ATTACHMENTS", strconv.FormatBool(*fc.DropAttachments))
+	}
+	setIfAbsent("ADMIN_GROUP", fc.AdminGroup)
 }
 
 func setIfAbsent(key, value string) {
@@ -161,10 +183,10 @@ func setIfAbsentInt(key string, value int) {
 // Load reads configuration from (in priority order):
 //  1. Environment variables already set in the process
 //  2. .env file (via godotenv)
-//  3. mailtub.yaml (via loadYAML)
+//  3. shitmail.yaml (via loadYAML)
 //  4. Built-in defaults
 func Load() *Config {
-	// Priority: existing env vars > .env file > mailtub.yaml > defaults
+	// Priority: existing env vars > .env file > shitmail.yaml > defaults
 	_ = godotenv.Load()
 	loadYAML()
 
@@ -179,7 +201,15 @@ func Load() *Config {
 		MaxAttachmentSizeMB:  getInt("MAX_ATTACHMENT_SIZE_MB", 25),
 		MaxTotalAttachmentMB: getInt("MAX_TOTAL_ATTACHMENT_MB", 50),
 		MaxBodyKB:            getInt("MAX_BODY_KB", 512),
-		DatabasePath:         getStr("DATABASE_PATH", "./data/mailtub.db"),
+		DropAttachments:      getBool("DROP_ATTACHMENTS", false),
+		AdminGroup:           getStr("ADMIN_GROUP", "authentik Admins"),
+		IMAPHost:             getStr("IMAP_HOST", ""),
+		IMAPUser:             getStr("IMAP_USER", ""),
+		IMAPPass:             getStr("IMAP_PASS", ""),
+		IMAPMailbox:          getStr("IMAP_MAILBOX", "INBOX"),
+		IMAPEnvelopeHeaders:  getList("IMAP_ENVELOPE_HEADERS", []string{"X-Original-To", "Delivered-To", "X-Envelope-To", "X-Forwarded-To"}),
+		IMAPPollInterval:     getDuration("IMAP_POLL_INTERVAL", 60*time.Second),
+		DatabasePath:         getStr("DATABASE_PATH", "./data/shitmail.db"),
 		MailboxTTL:           getDuration("MAILBOX_TTL", 24*time.Hour),
 		RedisURL:             getStr("REDIS_URL", ""),
 		LogLevel:             getLogLevel("LOG_LEVEL", slog.LevelInfo),
@@ -194,6 +224,24 @@ func getStr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// getList reads a comma-separated env var, trimming blanks.
+func getList(key string, fallback []string) []string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	var out []string
+	for _, part := range strings.Split(v, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return fallback
+	}
+	return out
 }
 
 func getInt(key string, fallback int) int {

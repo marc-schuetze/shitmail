@@ -91,8 +91,8 @@ export default function AdminLogin() {
         {/* Logo */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 mb-3">
-            <img src="/favicon-96x96.png" alt="MailTub" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="text-primary font-bold text-xl tracking-tight">MailTub</span>
+            <img src="/favicon-96x96.png" alt="shitmail" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-primary font-bold text-xl tracking-tight">shitmail</span>
           </div>
           <p className="text-muted text-sm">Admin Panel</p>
         </div>
@@ -127,7 +127,7 @@ export default function AdminLogin() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2.5 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                   autoFocus
                   autoComplete="current-password"
                   disabled={loading}

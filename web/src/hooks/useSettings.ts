@@ -1,19 +1,20 @@
 import { useCallback, useState } from 'react'
 
-const STORAGE_KEY = 'mailtub_settings_v1'
+const STORAGE_KEY = 'shitmail_settings_v1'
 
-export type TTLHours = 1 | 6 | 24 | 168
+export type TTLHours = 1 | 6 | 24 | 168 | -1
+
+/** ttlHours value that keeps a mailbox (subscriptions). */
+export const TTL_FOREVER: TTLHours = -1
 
 export interface AppSettings {
   defaultTTLHours: TTLHours
   soundEnabled: boolean
-  blockRemoteImages: boolean
 }
 
 const DEFAULTS: AppSettings = {
   defaultTTLHours: 24,
   soundEnabled: false,
-  blockRemoteImages: false,
 }
 
 function load(): AppSettings {
@@ -45,4 +46,5 @@ export const TTL_OPTIONS: { hours: TTLHours; label: string; short: string }[] = 
   { hours: 6,   label: '6 hours',  short: '6h' },
   { hours: 24,  label: '24 hours', short: '24h' },
   { hours: 168, label: '7 days',   short: '7d' },
+  { hours: -1,  label: 'Keep forever', short: 'keep' },
 ]

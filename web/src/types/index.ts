@@ -3,6 +3,7 @@ export interface Mailbox {
   address: string
   localPart: string
   domain: string
+  owner: string
   expiresAt: string
   createdAt: string
 }

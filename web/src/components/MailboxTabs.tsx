@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { X, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { MailboxTab } from '@/hooks/useMailboxTabs'
@@ -42,7 +42,7 @@ export function MailboxTabs({ tabs, activeTabId, onSelect, onClose, onAdd }: Pro
           {tabs.map((tab, i) => {
             const isActive = tab.id === activeTabId
             const accent = TAB_ACCENTS[i % TAB_ACCENTS.length]
-            const label = tab.mailbox?.localPart ?? `Tab ${i + 1}`
+            const label = tab.mailbox?.address ?? `Tab ${i + 1}`
             const unread = tab.emails.filter(e => !e.isRead).length
 
             return (
@@ -55,7 +55,7 @@ export function MailboxTabs({ tabs, activeTabId, onSelect, onClose, onAdd }: Pro
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.15 }}
                 className={cn(
-                  'relative group flex items-center gap-1.5 px-2.5 shrink-0 max-w-[128px]',
+                  'relative group flex items-center gap-1.5 px-2.5 shrink-0 max-w-[320px]',
                   'cursor-pointer select-none transition-colors duration-100',
                   isActive
                     ? 'bg-surface-0 border-r border-border'
@@ -79,7 +79,7 @@ export function MailboxTabs({ tabs, activeTabId, onSelect, onClose, onAdd }: Pro
                 {/* Label */}
                 <span
                   className={cn(
-                    'text-[11px] font-semibold truncate leading-none',
+                    'text-[11px] font-semibold break-all select-text leading-none',
                     isActive ? accent.active : '',
                   )}
                 >
@@ -105,7 +105,7 @@ export function MailboxTabs({ tabs, activeTabId, onSelect, onClose, onAdd }: Pro
                     onClick={e => { e.stopPropagation(); onClose(tab.id) }}
                     aria-label={`Close ${label}`}
                     className={cn(
-                      'shrink-0 size-4 rounded flex items-center justify-center transition-all duration-100',
+                      'shrink-0 size-4 rounded-sm flex items-center justify-center transition-all duration-100',
                       'opacity-0 group-hover:opacity-100',
                       'hover:bg-white/10 text-slate-500 hover:text-slate-300',
                       isActive && 'opacity-70',

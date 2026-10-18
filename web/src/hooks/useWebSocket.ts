@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { WSMessage } from '@/types'
+import { me } from '@/api/client'
 
 type Handler = (msg: WSMessage) => void
 
@@ -50,6 +51,9 @@ export function useWebSocket(
       disconnectRef.current?.()
       const delay = retryDelay.current
       retryDelay.current = Math.min(retryDelay.current * 2, 30_000)
+      // A socket the proxy refuses (expired session) never opens; once the
+      // back-off is maxed, probe the API, which reloads the page if so.
+      if (delay >= 30_000) me().catch(() => { /* handled in client */ })
       retryTimer.current = setTimeout(() => connect(), delay)
     }
 

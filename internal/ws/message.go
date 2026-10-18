@@ -1,7 +1,7 @@
 // Package ws implements the WebSocket hub for real-time inbox updates.
 package ws
 
-import "github.com/dml-labs/mailtub/internal/domain"
+import "github.com/marc-schuetze/shitmail/internal/domain"
 
 // EventType enumerates the events the server pushes to clients.
 type EventType string

@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dml-labs/mailtub/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/domain"
 )
 
 // EmailStore is the SQLite implementation of domain.EmailRepository.

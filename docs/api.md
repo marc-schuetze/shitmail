@@ -1,6 +1,6 @@
 # REST API Reference
 
-MailTub exposes a REST API at `/api/v1`. All request and response bodies use JSON (`Content-Type: application/json`).
+shitmail exposes a REST API at `/api/v1`. All request and response bodies use JSON (`Content-Type: application/json`).
 
 ---
 
@@ -256,13 +256,13 @@ curl -H "Authorization: Bearer $ADMIN_PASSWORD" http://localhost:8080/metrics
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `mailtub_mailboxes_created_total` | Counter | Mailboxes created (by domain) |
-| `mailtub_mailboxes_deleted_total` | Counter | Mailboxes deleted (by domain + reason) |
-| `mailtub_emails_received_total` | Counter | Emails received via SMTP |
-| `mailtub_ws_connections_active` | Gauge | Active WebSocket connections |
-| `mailtub_smtp_connections_total` | Counter | SMTP connections accepted |
-| `mailtub_http_requests_total` | Counter | HTTP requests by method, route, status |
-| `mailtub_http_request_duration_seconds` | Histogram | HTTP request latency |
+| `shitmail_mailboxes_created_total` | Counter | Mailboxes created (by domain) |
+| `shitmail_mailboxes_deleted_total` | Counter | Mailboxes deleted (by domain + reason) |
+| `shitmail_emails_received_total` | Counter | Emails received via SMTP |
+| `shitmail_ws_connections_active` | Gauge | Active WebSocket connections |
+| `shitmail_smtp_connections_total` | Counter | SMTP connections accepted |
+| `shitmail_http_requests_total` | Counter | HTTP requests by method, route, status |
+| `shitmail_http_request_duration_seconds` | Histogram | HTTP request latency |
 
 ---
 
@@ -272,7 +272,7 @@ All admin endpoints require a valid admin session cookie (set by `POST /admin/lo
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/admin/login` | Log in — sets `mailtub_admin` cookie |
+| `POST` | `/admin/login` | Log in — sets `shitmail_admin` cookie |
 | `GET` | `/admin/logout` | Clear admin cookie |
 | `GET` | `/admin/api/stats` | Server stats (mailbox count, email count, DB size, uptime) |
 | `GET` | `/admin/api/mailboxes` | Paginated mailbox list |

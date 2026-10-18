@@ -12,10 +12,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/dml-labs/mailtub/internal/config"
-	"github.com/dml-labs/mailtub/internal/domain"
-	"github.com/dml-labs/mailtub/internal/logbuf"
-	"github.com/dml-labs/mailtub/internal/storage"
+	"github.com/marc-schuetze/shitmail/internal/config"
+	"github.com/marc-schuetze/shitmail/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/logbuf"
+	"github.com/marc-schuetze/shitmail/internal/storage"
 )
 
 // Handler holds dependencies for all admin REST endpoints.

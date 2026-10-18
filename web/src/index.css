@@ -1,50 +1,285 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* ── Design tokens: dark (default) / light ──────────────────────────────── */
-/*  RGB channels — no `rgb()` wrapper so opacity modifiers work correctly   */
-:root,
-.dark {
-  /* Surface scale — from deepest to most elevated */
-  --mt-s0: 10 10 16;       /* #0a0a10  body bg */
-  --mt-s1: 14 14 24;       /* #0e0e18  sidebar / panel */
-  --mt-s2: 19 19 32;       /* #131320  card hover */
-  --mt-s3: 24 24 48;       /* #181830  elevated card */
-  --mt-s4: 30 30 58;       /* #1e1e3a  inputs, highest */
+@custom-variant dark (&:is(.dark *));
 
-  /* Borders */
-  --mt-bs: 17 17 38;       /* subtle  #111126 */
-  --mt-b:  27 27 50;       /* default #1b1b32 */
-  --mt-bm: 37 37 69;       /* muted   #252545 */
-  --mt-bf: 16 185 129;     /* focus   emerald-500 */
+@theme {
+  --color-surface-0: rgb(var(--mt-s0));
+  --color-surface-1: rgb(var(--mt-s1));
+  --color-surface-2: rgb(var(--mt-s2));
+  --color-surface-3: rgb(var(--mt-s3));
+  --color-surface-4: rgb(var(--mt-s4));
 
-  /* Semantic text */
-  --mt-text-primary:    226 225 247;   /* ~slate-200 */
-  --mt-text-secondary:  148 148 169;   /* ~slate-400 */
-  --mt-text-muted:       90  90 110;   /* ~slate-600 */
-  --mt-text-faint:       50  50  70;   /* ~slate-700 */
+  --color-border-subtle: rgb(var(--mt-bs));
+  --color-border: rgb(var(--mt-b));
+  --color-border-muted: rgb(var(--mt-bm));
+  --color-border-focus: rgb(var(--mt-bf));
+
+  --color-primary: rgb(var(--mt-text-primary));
+  --color-secondary: rgb(var(--mt-text-secondary));
+  --color-muted: rgb(var(--mt-text-muted));
+  --color-faint: rgb(var(--mt-text-faint));
+
+  --color-accent: #10b981;
+  --color-accent-dim: #059669;
+  --color-accent-bright: #34d399;
+  --color-accent-glow: #6ee7b7;
+
+  --color-violet-800: #2e0070;
+  --color-violet-900: #1e0050;
+  --color-violet-950: #150030;
+
+  --font-sans: Plus Jakarta Sans, system-ui, -apple-system, sans-serif;
+  --font-mono: JetBrains Mono, ui-monospace, SFMono-Regular, monospace;
+
+  --text-2xs: 10px;
+  --text-2xs--line-height: 14px;
+  --text-xs: 11px;
+  --text-xs--line-height: 16px;
+  --text-sm: 12px;
+  --text-sm--line-height: 18px;
+  --text-base: 13px;
+  --text-base--line-height: 20px;
+  --text-md: 14px;
+  --text-md--line-height: 22px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 18px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 32px;
+
+  --animate-fade-in: fadeIn 0.15s ease-out;
+  --animate-slide-up: slideUp 0.2s ease-out;
+  --animate-slide-in-left: slideInLeft 0.2s ease-out;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spin-slow: spin 2s linear infinite;
+
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-emerald-glow: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    rgba(16, 185, 129, 0.1),
+    transparent
+  );
+  --background-image-violet-glow: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    rgba(124, 58, 237, 0.12),
+    transparent
+  );
+
+  --shadow-emerald-sm:
+    0 0 0 1px rgba(16, 185, 129, 0.22), 0 0 12px rgba(16, 185, 129, 0.08);
+  --shadow-emerald-md:
+    0 0 0 1px rgba(16, 185, 129, 0.32), 0 0 24px rgba(16, 185, 129, 0.13);
+  --shadow-violet-sm:
+    0 0 0 1px rgba(124, 58, 237, 0.25), 0 0 12px rgba(124, 58, 237, 0.1);
+  --shadow-violet-md:
+    0 0 0 1px rgba(124, 58, 237, 0.35), 0 0 24px rgba(124, 58, 237, 0.15);
+  --shadow-glow-xs: 0 0 8px rgba(16, 185, 129, 0.18);
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }
 
-.light {
-  --mt-s0: 249 250 251;    /* gray-50 */
-  --mt-s1: 255 255 255;    /* white */
-  --mt-s2: 243 244 246;    /* gray-100 */
-  --mt-s3: 229 231 235;    /* gray-200 */
-  --mt-s4: 209 213 219;    /* gray-300 */
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
 
-  --mt-bs: 243 244 246;    /* gray-100 */
-  --mt-b:  229 231 235;    /* gray-200 */
-  --mt-bm: 209 213 219;    /* gray-300 */
-  --mt-bf: 5 150 105;      /* focus   emerald-600 */
-
-  --mt-text-primary:    17  24  39;   /* gray-900 */
-  --mt-text-secondary:  75  85  99;   /* gray-600 */
-  --mt-text-muted:     156 163 175;   /* gray-400 */
-  --mt-text-faint:     209 213 219;   /* gray-300 */
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-/* ── Base ────────────────────────────────────────────────────────────────── */
+/* ── Components ──────────────────────────────────────────────────────────── */
+
+@utility icon-btn {
+  /* Icon button — small square icon button with hover state */
+  @apply flex items-center justify-center rounded-sm text-muted hover:text-primary hover:bg-surface-2 transition-colors;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility glow-emerald {
+  /* Glow effects — emerald brand */
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.18),
+    0 0 18px rgba(16, 185, 129, 0.08);
+}
+
+@utility glow-emerald-md {
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.32),
+    0 0 28px rgba(16, 185, 129, 0.14);
+}
+
+@utility glow-violet {
+  /* Legacy violet glow (kept for backward compat) */
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.18),
+    0 0 18px rgba(124, 58, 237, 0.08);
+}
+
+@utility glow-violet-md {
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.32),
+    0 0 28px rgba(124, 58, 237, 0.14);
+}
+
+@utility glass {
+  /* Glass */
+  background: rgba(10, 10, 16, 0.8);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  .light & {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}
+
+@utility light {
+  & .glass {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}
+
+@utility bg-mesh {
+  /* Ambient mesh — emerald brand */
+  background-image:
+    radial-gradient(
+      ellipse 70% 50% at 20% 0%,
+      rgba(16, 185, 129, 0.06) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 30% at 80% 100%,
+      rgba(59, 130, 246, 0.04) 0%,
+      transparent 50%
+    );
+}
+
+@utility badge {
+  /* Badges */
+  @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-semibold tracking-wide;
+}
+
+@utility badge-violet {
+  @apply badge bg-violet-950 text-violet-300 border border-violet-900/60;
+}
+
+@utility badge-green {
+  @apply badge bg-emerald-950/60 text-emerald-400 border border-emerald-900/40;
+}
+
+@utility badge-red {
+  @apply badge bg-red-950/60 text-red-400 border border-red-900/40;
+}
+
+@utility badge-amber {
+  @apply badge bg-amber-950/60 text-amber-400 border border-amber-900/40;
+}
+
+@utility mono {
+  /* Mono token */
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@utility text-primary {
+  /* Semantic text helpers */
+  color: rgb(var(--mt-text-primary));
+}
+
+@utility text-secondary {
+  color: rgb(var(--mt-text-secondary));
+}
+
+@utility text-muted {
+  color: rgb(var(--mt-text-muted));
+}
+
+@utility text-faint {
+  color: rgb(var(--mt-text-faint));
+}
+
+@layer utilities {
+  /* ── Design tokens: dark (default) / light ──────────────────────────────── */
+  /*  RGB channels — no `rgb()` wrapper so opacity modifiers work correctly   */
+  :root,
+  .dark {
+    /* Surface scale — from deepest to most elevated */
+    --mt-s0: 10 10 16; /* #0a0a10  body bg */
+    --mt-s1: 14 14 24; /* #0e0e18  sidebar / panel */
+    --mt-s2: 19 19 32; /* #131320  card hover */
+    --mt-s3: 24 24 48; /* #181830  elevated card */
+    --mt-s4: 30 30 58; /* #1e1e3a  inputs, highest */
+
+    /* Borders */
+    --mt-bs: 17 17 38; /* subtle  #111126 */
+    --mt-b: 27 27 50; /* default #1b1b32 */
+    --mt-bm: 37 37 69; /* muted   #252545 */
+    --mt-bf: 16 185 129; /* focus   emerald-500 */
+
+    /* Semantic text */
+    --mt-text-primary: 226 225 247; /* ~slate-200 */
+    --mt-text-secondary: 148 148 169; /* ~slate-400 */
+    --mt-text-muted: 90 90 110; /* ~slate-600 */
+    --mt-text-faint: 50 50 70; /* ~slate-700 */
+  }
+
+  .light {
+    --mt-s0: 249 250 251; /* gray-50 */
+    --mt-s1: 255 255 255; /* white */
+    --mt-s2: 243 244 246; /* gray-100 */
+    --mt-s3: 229 231 235; /* gray-200 */
+    --mt-s4: 209 213 219; /* gray-300 */
+
+    --mt-bs: 243 244 246; /* gray-100 */
+    --mt-b: 229 231 235; /* gray-200 */
+    --mt-bm: 209 213 219; /* gray-300 */
+    --mt-bf: 5 150 105; /* focus   emerald-600 */
+
+    --mt-text-primary: 17 24 39; /* gray-900 */
+    --mt-text-secondary: 75 85 99; /* gray-600 */
+    --mt-text-muted: 156 163 175; /* gray-400 */
+    --mt-text-faint: 209 213 219; /* gray-300 */
+  }
+
+  /* ── Base ────────────────────────────────────────────────────────────────── */
+}
 @layer base {
   *,
   *::before,
@@ -88,69 +323,35 @@
   h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -0.01em; }
 }
 
-/* ── Components ──────────────────────────────────────────────────────────── */
-@layer components {
-  /* Icon button — small square icon button with hover state */
-  .icon-btn {
-    @apply flex items-center justify-center rounded text-muted hover:text-primary hover:bg-surface-2 transition-colors;
-  }
-}
-
-/* ── Light-mode: slate override ──────────────────────────────────────────── */
-/*  Components that use hardcoded slate-* classes get sensible light values  */
-.light .text-slate-100 { color: rgb(17 24 39)  !important; }
-.light .text-slate-200 { color: rgb(17 24 39)  !important; }
-.light .text-slate-300 { color: rgb(55 65 81)  !important; }
-.light .text-slate-400 { color: rgb(107 114 128) !important; }
-.light .text-slate-500 { color: rgb(156 163 175) !important; }
-.light .text-slate-600 { color: rgb(209 213 219) !important; }
-.light .text-white     { color: rgb(17 24 39)  !important; }
-
-/* Email body iframe always stays readable on white */
-.light .email-body-frame { filter: none; }
-
-/* ── Utilities ────────────────────────────────────────────────────────────── */
 @layer utilities {
-  .text-balance { text-wrap: balance; }
-
-  /* Glow effects — emerald brand */
-  .glow-emerald    { box-shadow: 0 0 0 1px rgba(16,185,129,0.18), 0 0 18px rgba(16,185,129,0.08); }
-  .glow-emerald-md { box-shadow: 0 0 0 1px rgba(16,185,129,0.32), 0 0 28px rgba(16,185,129,0.14); }
-
-  /* Legacy violet glow (kept for backward compat) */
-  .glow-violet    { box-shadow: 0 0 0 1px rgba(124,58,237,0.18), 0 0 18px rgba(124,58,237,0.08); }
-  .glow-violet-md { box-shadow: 0 0 0 1px rgba(124,58,237,0.32), 0 0 28px rgba(124,58,237,0.14); }
-
-  /* Glass */
-  .glass {
-    background: rgba(10, 10, 16, 0.8);
-    backdrop-filter: blur(16px) saturate(1.5);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  /* ── Light-mode: slate override ──────────────────────────────────────────── */
+  /*  Components that use hardcoded slate-* classes get sensible light values  */
+  .light .text-slate-100 {
+    color: rgb(17 24 39) !important;
   }
-  .light .glass {
-    background: rgba(255, 255, 255, 0.85);
+  .light .text-slate-200 {
+    color: rgb(17 24 39) !important;
   }
-
-  /* Ambient mesh — emerald brand */
-  .bg-mesh {
-    background-image:
-      radial-gradient(ellipse 70% 50% at 20% 0%, rgba(16,185,129,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 30% at 80% 100%, rgba(59,130,246,0.04) 0%, transparent 50%);
+  .light .text-slate-300 {
+    color: rgb(55 65 81) !important;
+  }
+  .light .text-slate-400 {
+    color: rgb(107 114 128) !important;
+  }
+  .light .text-slate-500 {
+    color: rgb(156 163 175) !important;
+  }
+  .light .text-slate-600 {
+    color: rgb(209 213 219) !important;
+  }
+  .light .text-white {
+    color: rgb(17 24 39) !important;
   }
 
-  /* Badges */
-  .badge        { @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide; }
-  .badge-violet { @apply badge bg-violet-950 text-violet-300 border border-violet-900/60; }
-  .badge-green  { @apply badge bg-emerald-950/60 text-emerald-400 border border-emerald-900/40; }
-  .badge-red    { @apply badge bg-red-950/60 text-red-400 border border-red-900/40; }
-  .badge-amber  { @apply badge bg-amber-950/60 text-amber-400 border border-amber-900/40; }
+  /* Email body iframe always stays readable on white */
+  .light .email-body-frame {
+    filter: none;
+  }
 
-  /* Mono token */
-  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-
-  /* Semantic text helpers */
-  .text-primary   { color: rgb(var(--mt-text-primary)); }
-  .text-secondary { color: rgb(var(--mt-text-secondary)); }
-  .text-muted     { color: rgb(var(--mt-text-muted)); }
-  .text-faint     { color: rgb(var(--mt-text-faint)); }
+  /* ── Utilities ────────────────────────────────────────────────────────────── */
 }

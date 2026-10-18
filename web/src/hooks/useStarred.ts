@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 
-const STORAGE_KEY = 'mailtub_starred_v1'
+const STORAGE_KEY = 'shitmail_starred_v1'
 
 function load(): Set<string> {
   try {

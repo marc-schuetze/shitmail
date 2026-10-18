@@ -59,7 +59,7 @@ function CopyBtn({ value }: { value: string }) {
     })
   }
   return (
-    <button onClick={copy} className="p-1 rounded text-muted hover:text-primary transition-colors" title="Copy">
+    <button onClick={copy} className="p-1 rounded-sm text-muted hover:text-primary transition-colors" title="Copy">
       {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
     </button>
   )
@@ -76,7 +76,7 @@ function LevelBadge({ level }: { level: string }) {
   }
   const upper = level.toUpperCase()
   return (
-    <span className={cn('inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold', map[upper] ?? 'text-secondary bg-surface-3')}>
+    <span className={cn('inline-block px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-semibold', map[upper] ?? 'text-secondary bg-surface-3')}>
       {upper}
     </span>
   )
@@ -285,17 +285,17 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-surface-0 text-primary">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="border-b border-border bg-surface-1/50 sticky top-0 z-10 backdrop-blur-sm">
+      <div className="border-b border-border bg-surface-1/50 sticky top-0 z-10 backdrop-blur-xs">
         <div className="max-w-6xl mx-auto px-4 h-13 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="size-7 rounded-lg bg-emerald-500 flex items-center justify-center">
               <Shield className="size-4 text-white" />
             </div>
-            <span className="font-bold text-base text-primary">MailTub</span>
+            <span className="font-bold text-base text-primary">shitmail</span>
             <span className="text-muted text-sm">/ Admin</span>
           </div>
           {stats && (
-            <span className="ml-1 text-[10px] bg-surface-2 border border-border px-1.5 py-0.5 rounded font-mono text-muted">
+            <span className="ml-1 text-[10px] bg-surface-2 border border-border px-1.5 py-0.5 rounded-sm font-mono text-muted">
               {stats.version}
             </span>
           )}
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search address…"
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-surface-1 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-surface-1 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                 />
               </div>
               <div className="flex gap-1">
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
                               {mb.address}
                             </button>
                             {isExpired(mb.expiresAt) && (
-                              <span className="ml-2 text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded">expired</span>
+                              <span className="ml-2 text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded-sm">expired</span>
                             )}
                           </td>
                           <td className="px-3 py-2.5 text-xs text-muted hidden md:table-cell">{fmtShort(mb.createdAt)}</td>
@@ -486,7 +486,7 @@ export default function AdminDashboard() {
                               onClick={() => handlePurge(mb.id)}
                               disabled={purging === mb.id}
                               title="Delete mailbox"
-                              className="p-1 rounded text-muted hover:text-red-400 transition-colors disabled:opacity-40"
+                              className="p-1 rounded-sm text-muted hover:text-red-400 transition-colors disabled:opacity-40"
                             >
                               <Trash2 className="size-3.5" />
                             </button>
@@ -565,14 +565,14 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-2.5 py-1.5 rounded border border-border hover:bg-surface-2 disabled:opacity-40 transition-colors"
+                    className="px-2.5 py-1.5 rounded-sm border border-border hover:bg-surface-2 disabled:opacity-40 transition-colors"
                   >
                     Prev
                   </button>
                   <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={page * LIMIT >= total}
-                    className="px-2.5 py-1.5 rounded border border-border hover:bg-surface-2 disabled:opacity-40 transition-colors"
+                    className="px-2.5 py-1.5 rounded-sm border border-border hover:bg-surface-2 disabled:opacity-40 transition-colors"
                   >
                     Next
                   </button>
@@ -593,7 +593,7 @@ export default function AdminDashboard() {
                   value={logSearch}
                   onChange={e => setLogSearch(e.target.value)}
                   placeholder="Search log messages…"
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-surface-1 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-surface-1 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                 />
               </div>
               <div className="flex gap-1">
@@ -744,7 +744,7 @@ export default function AdminDashboard() {
                           placeholder="••••••••"
                           autoComplete="current-password"
                           disabled={cpLoading}
-                          className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                          className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                         />
                       </div>
                       <div>
@@ -757,7 +757,7 @@ export default function AdminDashboard() {
                             placeholder="••••••••"
                             autoComplete="new-password"
                             disabled={cpLoading}
-                            className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 pr-9 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                            className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 pr-9 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                           />
                           <button
                             type="button"
@@ -778,7 +778,7 @@ export default function AdminDashboard() {
                           placeholder="••••••••"
                           autoComplete="new-password"
                           disabled={cpLoading}
-                          className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+                          className="w-full bg-surface-0 border border-border rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus:outline-hidden focus:border-emerald-500/50 transition-colors"
                         />
                       </div>
                       {cpError && (

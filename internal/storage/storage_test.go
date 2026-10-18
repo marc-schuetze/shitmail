@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dml-labs/mailtub/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/domain"
 )
 
 // openTestDB opens an in-memory SQLite database and runs migrations.

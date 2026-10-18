@@ -1,4 +1,4 @@
-# ─── MailTub Makefile ────────────────────────────────────────────────────────
+# ─── shitmail Makefile ────────────────────────────────────────────────────────
 # Targets:
 #   make deps     – download & tidy Go modules
 #   make frontend – build React → web/dist
@@ -10,8 +10,8 @@
 #   make docker   – build Docker image
 # ─────────────────────────────────────────────────────────────────────────────
 
-BINARY   := bin/mailtub
-CMD_PKG  := ./cmd/mailtub
+BINARY   := bin/shitmail
+CMD_PKG  := ./cmd/shitmail
 WEB_DIR  := ./web
 GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 LDFLAGS  := -s -w -X main.version=$(shell git describe --tags --always 2>/dev/null || echo dev)
@@ -61,7 +61,7 @@ test:
 
 ## docker: Build the Docker image.
 docker:
-        docker build -t mailtub:latest .
+        docker build -t shitmail:latest .
 
 ## lint: Run Go linter (requires golangci-lint).
 lint:

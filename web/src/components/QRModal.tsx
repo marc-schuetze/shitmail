@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { X, Copy, Check } from 'lucide-react'
 import QRCode from 'qrcode'
 import { cn } from '@/lib/utils'
@@ -43,7 +43,7 @@ export function QRModal({ address, onClose }: Props) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}
       >
         <motion.div

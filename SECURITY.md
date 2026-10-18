@@ -30,7 +30,7 @@ We follow [responsible disclosure](https://en.wikipedia.org/wiki/Coordinated_vul
 - Set `ADMIN_PASSWORD` to a long, random string (32+ characters)
 - Use `SMTP_STARTTLS=true` with a valid certificate in production
 - Restrict direct access to port `2525` (SMTP) to trusted networks
-- MailTub stores emails in SQLite — back up `/data/mailtub.db` regularly
+- shitmail stores emails in SQLite — back up `/data/shitmail.db` regularly
 - Rate limiting is per-IP; add a CDN/WAF layer for additional protection
 
 ### Admin Panel
@@ -41,9 +41,9 @@ We follow [responsible disclosure](https://en.wikipedia.org/wiki/Coordinated_vul
 
 ### Email Content
 
-- MailTub does **not** scan email content for malware or spam
+- shitmail does **not** scan email content for malware or spam
 - HTML emails are rendered in an iframe — XSS from malicious senders is possible
-- Do not use MailTub to receive sensitive information
+- Do not use shitmail to receive sensitive information
 
 ## Credits
 

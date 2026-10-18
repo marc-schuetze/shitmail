@@ -1,30 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useMailboxTabs } from '@/hooks/useMailboxTabs'
+import * as api from '@/api/client'
 import type { Email, Mailbox } from '@/types'
 
 // ── API mock ──────────────────────────────────────────────────────────────
 
+const { MB } = vi.hoisted(() => ({ MB: {
+  id: 'mb-test',
+  address: 'test-abc12@localhost',
+  localPart: 'test-abc12',
+  domain: 'localhost',
+  owner: 'uid-1',
+  createdAt: new Date().toISOString(),
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+} satisfies Mailbox }))
+
 vi.mock('@/api/client', () => ({
-  createMailbox: vi.fn().mockResolvedValue({
-    id: 'mb-test',
-    address: 'test@localhost',
-    localPart: 'test',
-    domain: 'localhost',
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  } satisfies Mailbox),
+  // Server-side list: the user already owns one mailbox.
+  listMailboxes: vi.fn().mockResolvedValue({ mailboxes: [MB] }),
+  createMailbox: vi.fn().mockResolvedValue({ ...MB, id: 'mb-new', address: 'new-abc12@localhost', localPart: 'new-abc12' }),
   listEmails: vi.fn().mockResolvedValue({ emails: [] }),
-  getMailbox: vi.fn().mockResolvedValue({
-    mailbox: {
-      id: 'mb-test',
-      address: 'test@localhost',
-      localPart: 'test',
-      domain: 'localhost',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    },
-  }),
+  getMailbox: vi.fn().mockResolvedValue({ mailbox: MB }),
+  markEmailRead: vi.fn().mockResolvedValue(undefined),
   deleteMailbox: vi.fn().mockResolvedValue(undefined),
 }))
 
@@ -56,22 +54,30 @@ beforeEach(() => {
 // ── Initialization ────────────────────────────────────────────────────────
 
 describe('useMailboxTabs initialization', () => {
-  it('creates one tab on fresh session', async () => {
+  it('loads the user\'s mailboxes from the server, never auto-creates', async () => {
     const { result } = renderHook(() => useMailboxTabs())
-
-    // Wait for the init effect to complete
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
 
+    expect(result.current.initializing).toBe(false)
     expect(result.current.tabs.length).toBe(1)
-    expect(result.current.activeTab).not.toBeNull()
+    expect(result.current.tabs[0].id).toBe('mb-test')
+    expect(result.current.activeTabId).toBe('mb-test')
+    expect(api.createMailbox).not.toHaveBeenCalled()
   })
 
-  it('activeTabId matches the single tab', async () => {
+  it('addTab appends and activates; deleteTabMailbox drops without replacement', async () => {
     const { result } = renderHook(() => useMailboxTabs())
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
 
-    const { tabs, activeTabId } = result.current
-    expect(tabs[0].id).toBe(activeTabId)
+    await act(async () => { await result.current.addTab('new', 24) })
+    expect(result.current.tabs.length).toBe(2)
+    expect(result.current.activeTabId).toBe('mb-new')
+
+    await act(async () => { await result.current.deleteTabMailbox('mb-new') })
+    expect(api.deleteMailbox).toHaveBeenCalledWith('new-abc12@localhost')
+    expect(result.current.tabs.length).toBe(1)
+    expect(result.current.activeTabId).toBe('mb-test')
+    expect(api.createMailbox).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -155,8 +161,9 @@ describe('markEmailReadInTab', () => {
 
     const tabId = result.current.activeTabId
     act(() => result.current.addEmailToTab(tabId, makeEmail({ id: 'e1', isRead: false })))
-    act(() => result.current.markEmailReadInTab(tabId, 'e1'))
+    await act(async () => { await result.current.markEmailReadInTab(tabId, 'e1') })
 
+    expect(api.markEmailRead).toHaveBeenCalledWith(MB.address, 'e1')
     expect(result.current.activeTab?.emails[0].isRead).toBe(true)
   })
 
@@ -167,7 +174,7 @@ describe('markEmailReadInTab', () => {
     const tabId = result.current.activeTabId
     act(() => result.current.addEmailToTab(tabId, makeEmail({ id: 'e1', isRead: false })))
     act(() => result.current.addEmailToTab(tabId, makeEmail({ id: 'e2', isRead: false })))
-    act(() => result.current.markEmailReadInTab(tabId, 'e1'))
+    await act(async () => { await result.current.markEmailReadInTab(tabId, 'e1') })
 
     const e2 = result.current.activeTab?.emails.find(e => e.id === 'e2')
     expect(e2?.isRead).toBe(false)
@@ -194,7 +201,7 @@ describe('unreadCount', () => {
 
     const tabId = result.current.activeTabId
     act(() => result.current.addEmailToTab(tabId, makeEmail({ id: 'e1', isRead: false })))
-    act(() => result.current.markEmailReadInTab(tabId, 'e1'))
+    await act(async () => { await result.current.markEmailReadInTab(tabId, 'e1') })
 
     expect(result.current.unreadCount).toBe(0)
   })
@@ -203,14 +210,16 @@ describe('unreadCount', () => {
 // ── closeTab ──────────────────────────────────────────────────────────────
 
 describe('closeTab', () => {
-  it('keeps at least one tab open', async () => {
+  it('closing the last tab leaves an empty state, no auto-created mailbox', async () => {
     const { result } = renderHook(() => useMailboxTabs())
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
 
     const tabId = result.current.activeTabId
     act(() => result.current.closeTab(tabId))
 
-    expect(result.current.tabs.length).toBeGreaterThanOrEqual(1)
+    expect(result.current.tabs.length).toBe(0)
+    expect(result.current.activeTabId).toBe('')
+    expect(api.createMailbox).not.toHaveBeenCalled()
   })
 })
 
@@ -225,5 +234,30 @@ describe('setTabWsConnected', () => {
     act(() => result.current.setTabWsConnected(tabId, true))
 
     expect(result.current.activeTab?.wsConnected).toBe(true)
+  })
+})
+
+
+describe('read state persistence', () => {
+  it('keeps read state after reloading messages from the server', async () => {
+    let stored = makeEmail()
+    vi.mocked(api.listEmails).mockImplementation(async () => ({ emails: [stored], total: 1 }))
+    vi.mocked(api.markEmailRead).mockImplementationOnce(async () => { stored = { ...stored, isRead: true } })
+    const { result } = renderHook(() => useMailboxTabs())
+    await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    expect(result.current.unreadCount).toBe(1)
+    await act(async () => { await result.current.markEmailReadInTab(MB.id, stored.id) })
+    await act(async () => { await result.current.refreshTab(MB.id) })
+    expect(result.current.unreadCount).toBe(0)
+    vi.mocked(api.listEmails).mockResolvedValue({ emails: [], total: 0 })
+  })
+
+  it('does not claim success when the server fails to save read state', async () => {
+    const { result } = renderHook(() => useMailboxTabs())
+    await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    act(() => result.current.addEmailToTab(MB.id, makeEmail()))
+    vi.mocked(api.markEmailRead).mockRejectedValueOnce(new Error('save failed'))
+    await act(async () => { await expect(result.current.markEmailReadInTab(MB.id, 'email-1')).rejects.toThrow('save failed') })
+    expect(result.current.unreadCount).toBe(1)
   })
 })

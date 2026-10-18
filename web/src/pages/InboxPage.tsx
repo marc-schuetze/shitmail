@@ -1,19 +1,17 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import { NavSidebar, type NavView } from '@/components/NavSidebar'
 import { AppBar } from '@/components/AppBar'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { EmailList } from '@/components/EmailList'
 import { EmailDetail } from '@/components/EmailDetail'
-import { QRModal } from '@/components/QRModal'
 import { CommandPalette } from '@/components/CommandPalette'
-import { useMailboxTabs } from '@/hooks/useMailboxTabs'
+import { useMailboxTabs, ALL_TABS } from '@/hooks/useMailboxTabs'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useStarred } from '@/hooks/useStarred'
 import { useSettings } from '@/hooks/useSettings'
-import { deleteEmail, exportEmailsJSON, exportEmailsZIP } from '@/api/client'
+import { deleteEmail, exportEmailsJSON, exportEmailsZIP, me as fetchMe, type Me } from '@/api/client'
 import { cn } from '@/lib/utils'
 import type { Email, WSMessage } from '@/types'
 
@@ -41,8 +39,8 @@ function TabWSBridge({
 function FooterBar() {
   return (
     <div className="h-7 shrink-0 flex items-center justify-between px-4 border-t border-border bg-surface-1/50">
-      <span className="text-[10px] text-muted">MailTub · Self-hosted · Apache 2.0</span>
-      <span className="text-[10px] text-faint">Made by DML Labs ❤️</span>
+      <span className="text-[10px] text-muted">shitmail · Self-hosted · Apache 2.0</span>
+      <span className="text-[10px] text-faint">Fork of MailTub by DML Labs</span>
     </div>
   )
 }
@@ -60,9 +58,9 @@ const VIEW_LABELS: Record<NavView, string> = {
 
 export default function InboxPage() {
   const {
-    tabs, activeTabId, activeTab, unreadCount,
-    addTab, closeTab, setActiveTab,
-    deleteTabMailbox, refreshTab,
+    tabs, initializing, activeTabId, activeTab, unreadCount,
+    addTab, setActiveTab,
+    deleteTabMailbox, setTabTTL, refreshTab,
     addEmailToTab, removeEmailFromTab, markEmailReadInTab, setTabWsConnected,
   } = useMailboxTabs()
 
@@ -73,13 +71,13 @@ export default function InboxPage() {
   const [view, setView] = useState<NavView>('inbox')
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
-  const [showQR, setShowQR] = useState(false)
-  const [toolbarCopied, setToolbarCopied] = useState(false)
-  const [arrivalTimes, setArrivalTimes] = useState<number[]>([])
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [mobilePane, setMobilePane] = useState<'list' | 'detail'>('list')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const [identity, setIdentity] = useState<Me | null>(null)
+  useEffect(() => { fetchMe().then(setIdentity).catch(() => setIdentity(null)) }, [])
+  const addressSuffix = identity ? `-${identity.tag}@${identity.domain}` : undefined
 
   // Keep sound setting in a ref so WS handler doesn't need to re-subscribe
   const soundEnabledRef = useRef(settings.soundEnabled)
@@ -119,11 +117,11 @@ export default function InboxPage() {
   }, [])
 
   // ── Favicon + title badge ─────────────────────────────────────────────────
-  const originalTitle = useRef('MailTub')
+  const originalTitle = useRef('shitmail')
   const faviconRef = useRef<HTMLLinkElement | null>(null)
 
   useEffect(() => {
-    document.title = unreadCount > 0 ? `(${unreadCount}) MailTub` : originalTitle.current
+    document.title = unreadCount > 0 ? `(${unreadCount}) shitmail` : originalTitle.current
     const canvas = document.createElement('canvas')
     canvas.width = 32; canvas.height = 32
     const ctx = canvas.getContext('2d')
@@ -190,15 +188,14 @@ export default function InboxPage() {
       case 'new_email':
         if (msg.email) {
           addEmailToTab(tabId, msg.email)
-          setArrivalTimes(prev => [...prev.slice(-9), Date.now()])
           if (soundEnabledRef.current) playChime()
-          if (tabId === activeTabId) {
+          if (tabId === activeTabId || activeTabId === ALL_TABS) {
             toast.success(`New email from ${msg.email.from || 'unknown'}`, {
               description: msg.email.subject || '(no subject)', duration: 5000,
             })
           } else {
             const tab = tabs.find(t => t.id === tabId)
-            toast(`New email in ${tab?.mailbox?.localPart ?? 'another tab'}`, {
+            toast(`New email in ${tab?.mailbox ? tab.mailbox.address : 'another tab'}`, {
               description: msg.email.subject || '(no subject)', duration: 4000,
             })
           }
@@ -212,8 +209,32 @@ export default function InboxPage() {
 
   const handleWsDisconnect = useCallback((tabId: string) => setTabWsConnected(tabId, false), [setTabWsConnected])
 
+  // Fallback when the socket is gone (proxy session expired, sleep, flaky
+  // network): re-fetch on focus, and every 45 s for tabs without a socket.
+  const tabsRef = useRef(tabs)
+  tabsRef.current = tabs
+  useEffect(() => {
+    const refreshAll = () => tabsRef.current.forEach(t => refreshTab(t.id))
+    const refreshDead = () => tabsRef.current.filter(t => !t.wsConnected).forEach(t => refreshTab(t.id))
+    const onVis = () => { if (document.visibilityState === 'visible') refreshAll() }
+    window.addEventListener('focus', refreshAll)
+    document.addEventListener('visibilitychange', onVis)
+    const id = setInterval(refreshDead, 45_000)
+    return () => { window.removeEventListener('focus', refreshAll); document.removeEventListener('visibilitychange', onVis); clearInterval(id) }
+  }, [refreshTab])
+
+  // ── Merged "all mailboxes" view ───────────────────────────────────────────
+  const allMode = activeTabId === ALL_TABS
+  const tabOf = useCallback((email: Email) => tabs.find(t => t.mailbox?.id === email.mailboxId), [tabs])
+  const labelFor = useCallback((email: Email) => {
+    const mb = tabOf(email)?.mailbox
+    return mb ? mb.address : undefined
+  }, [tabOf])
+
   // ── Filtered emails ───────────────────────────────────────────────────────
-  const allEmails = activeTab?.emails ?? []
+  const allEmails = useMemo(() => allMode
+    ? tabs.flatMap(t => t.emails).sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
+    : activeTab?.emails ?? [], [allMode, tabs, activeTab])
 
   const filteredEmails = useMemo(() => {
     let list = allEmails
@@ -237,8 +258,11 @@ export default function InboxPage() {
   const handleSelectEmail = useCallback((email: Email) => {
     setSelectedEmail(email)
     setMobilePane('detail')
-    if (!email.isRead) markEmailReadInTab(activeTabId, email.id)
-  }, [activeTabId, markEmailReadInTab])
+    const owner = tabOf(email)
+    if (!email.isRead && owner) {
+      markEmailReadInTab(owner.id, email.id).catch(() => toast.error('Could not mark email as read. Open it again to retry.'))
+    }
+  }, [tabOf, markEmailReadInTab])
 
   const handleEmailClose = useCallback(() => {
     // On mobile, go back to list without clearing the selection.
@@ -251,15 +275,17 @@ export default function InboxPage() {
   }, [])
 
   const handleDeleteEmail = useCallback(async (id: string) => {
-    if (!activeTab?.mailbox) return
+    const email = allEmails.find(e => e.id === id)
+    const owner = email ? tabOf(email) : undefined
+    if (!owner?.mailbox) return
     try {
-      await deleteEmail(activeTab.mailbox.address, id)
-      removeEmailFromTab(activeTabId, id)
+      await deleteEmail(owner.mailbox.address, id)
+      removeEmailFromTab(owner.id, id)
       if (selectedEmail?.id === id) { setSelectedEmail(null); setMobilePane('list') }
     } catch {
       toast.error('Failed to delete email')
     }
-  }, [activeTab, activeTabId, removeEmailFromTab, selectedEmail])
+  }, [allEmails, tabOf, removeEmailFromTab, selectedEmail])
 
   const handleDeleteMailbox = useCallback(async () => {
     if (!activeTab) return
@@ -267,7 +293,7 @@ export default function InboxPage() {
       await deleteTabMailbox(activeTabId)
       setSelectedEmail(null)
       setMobilePane('list')
-      toast.success('Mailbox deleted — new address generated')
+      toast.success('Mailbox deleted')
     } catch {
       toast.error('Failed to delete mailbox')
     }
@@ -282,23 +308,19 @@ export default function InboxPage() {
 
   const handleCopyAddress = useCallback(() => {
     if (!activeTab?.mailbox) return
-    navigator.clipboard.writeText(activeTab.mailbox.address).then(() => {
-      setToolbarCopied(true)
-      setTimeout(() => setToolbarCopied(false), 1_800)
-      toast.success('Address copied')
-    })
+    navigator.clipboard.writeText(activeTab.mailbox.address).then(() => toast.success('Address copied'))
   }, [activeTab])
 
   const handleExportJSON = useCallback(() => {
     if (allEmails.length === 0) { toast.error('No emails to export'); return }
-    exportEmailsJSON(allEmails, `${activeTab?.mailbox?.localPart ?? 'inbox'}_${new Date().toISOString().slice(0, 10)}.json`)
+    exportEmailsJSON(allEmails, `${activeTab?.mailbox?.localPart ?? 'all'}_${new Date().toISOString().slice(0, 10)}.json`)
     toast.success(`Exported ${allEmails.length} email${allEmails.length !== 1 ? 's' : ''} as JSON`)
   }, [allEmails, activeTab])
 
   const handleExportZIP = useCallback(async () => {
     if (allEmails.length === 0) { toast.error('No emails to export'); return }
     try {
-      await exportEmailsZIP(allEmails, `${activeTab?.mailbox?.localPart ?? 'inbox'}_${new Date().toISOString().slice(0, 10)}.zip`)
+      await exportEmailsZIP(allEmails, `${activeTab?.mailbox?.localPart ?? 'all'}_${new Date().toISOString().slice(0, 10)}.zip`)
       toast.success('Exported as .eml ZIP')
     } catch { toast.error('Export failed') }
   }, [allEmails, activeTab])
@@ -323,16 +345,13 @@ export default function InboxPage() {
 
       {/* ── App bar ────────────────────────────────────────────── */}
       <AppBar
-        activeMailbox={activeTab?.mailbox ?? null}
-        wsConnected={activeTab?.wsConnected ?? false}
-        toolbarCopied={toolbarCopied}
-        onCopyAddress={handleCopyAddress}
-        onQROpen={() => setShowQR(true)}
-        onRefresh={handleRefresh}
-        onDeleteMailbox={handleDeleteMailbox}
+        context={allMode ? 'All mailboxes' : activeTab?.mailbox ? activeTab.mailbox.address : ''}
+        initial={identity?.username?.[0] ?? '?'}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchRef={searchRef}
+        navigationOpen={mobileNavOpen}
+        onToggleNavigation={() => setMobileNavOpen(v => !v)}
       />
 
       {/* ── Main content ───────────────────────────────────────── */}
@@ -341,50 +360,34 @@ export default function InboxPage() {
         {/* Mobile sidebar overlay backdrop */}
         {mobileNavOpen && (
           <div
-            className="fixed inset-0 z-20 bg-black/50 md:hidden"
+            className="fixed inset-x-0 top-10 bottom-0 z-20 bg-black/50 md:hidden"
             onClick={() => setMobileNavOpen(false)}
           />
         )}
 
-        {/* Hamburger (mobile only) */}
-        <button
-          onClick={() => setMobileNavOpen(v => !v)}
-          className={cn(
-            'fixed bottom-4 left-4 z-30 md:hidden',
-            'size-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg',
-            'transition-transform active:scale-95',
-          )}
-          aria-label="Open navigation"
-        >
-          {mobileNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
-
         {/* Left nav */}
         <div className={cn(
-          'fixed inset-y-0 left-0 z-30 transition-transform duration-200 ease-in-out',
-          'md:relative md:z-auto md:translate-x-0',
+          'fixed top-10 bottom-0 left-0 z-30 transition-transform duration-200 ease-in-out',
+          'md:relative md:top-auto md:bottom-auto md:z-auto md:translate-x-0',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
         )}>
           <NavSidebar
             tabs={tabs}
             activeTabId={activeTabId}
+            allActive={allMode}
+            onSelectAll={() => { setActiveTab(ALL_TABS); setMobileNavOpen(false) }}
             onSelectTab={id => { setActiveTab(id); setMobileNavOpen(false) }}
             onAddTab={handleAddTab}
-            onCloseTab={closeTab}
-            activeMailbox={activeTab?.mailbox ?? null}
-            wsConnected={activeTab?.wsConnected ?? false}
-            loading={activeTab?.loading ?? true}
-            emailCount={allEmails.length}
+            onDeleteTab={deleteTabMailbox}
+            onSetTabTTL={setTabTTL}
+            loading={initializing || (activeTab?.loading ?? false)}
             unreadCount={unreadCount}
             starredCount={starredCount}
             attachmentEmailCount={attachmentEmailCount}
             view={view}
             onViewChange={v => { setView(v); setMobileNavOpen(false) }}
             defaultTTLHours={settings.defaultTTLHours}
-            onCopyAddress={handleCopyAddress}
-            onRefresh={handleRefresh}
-            onDeleteMailbox={handleDeleteMailbox}
-            arrivalTimes={arrivalTimes}
+            addressSuffix={addressSuffix}
           />
         </div>
 
@@ -399,8 +402,6 @@ export default function InboxPage() {
               activeEmails={allEmails}
               soundEnabled={settings.soundEnabled}
               onSoundToggle={() => setSettings({ soundEnabled: !settings.soundEnabled })}
-              blockRemoteImages={settings.blockRemoteImages}
-              onBlockRemoteImagesToggle={() => setSettings({ blockRemoteImages: !settings.blockRemoteImages })}
             />
           ) : (
             <motion.div
@@ -423,7 +424,7 @@ export default function InboxPage() {
                   <span className="text-sm font-semibold text-primary">{VIEW_LABELS[view]}</span>
                   {filteredEmails.length > 0 && (
                     <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-3 text-secondary">
-                      {filteredEmails.length}
+                      {filteredEmails.length} message{filteredEmails.length === 1 ? '' : 's'}
                     </span>
                   )}
                   <div className="ml-auto flex items-center gap-0.5">
@@ -432,7 +433,7 @@ export default function InboxPage() {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-medium capitalize transition-colors',
+                          'px-2 py-0.5 rounded-sm text-[10px] font-medium capitalize transition-colors',
                           filter === f
                             ? 'bg-surface-3 text-primary'
                             : 'text-muted hover:text-secondary',
@@ -454,7 +455,7 @@ export default function InboxPage() {
                 )}
 
                 {/* Email list */}
-                {activeTab?.loading ? (
+                {initializing || activeTab?.loading ? (
                   <EmailListSkeleton />
                 ) : (
                   <EmailList
@@ -463,6 +464,7 @@ export default function InboxPage() {
                     onSelect={handleSelectEmail}
                     starredIds={starred}
                     onToggleStar={toggleStar}
+                    labelFor={allMode ? labelFor : undefined}
                   />
                 )}
               </div>
@@ -475,10 +477,9 @@ export default function InboxPage() {
               )}>
                 <EmailDetail
                   email={selectedEmail}
-                  mailboxAddress={activeTab?.mailbox?.address ?? ''}
+                  mailboxAddress={(selectedEmail && tabOf(selectedEmail)?.mailbox?.address) ?? activeTab?.mailbox?.address ?? ''}
                   onDelete={handleDeleteEmail}
                   onClose={handleEmailClose}
-                  blockRemoteImages={settings.blockRemoteImages}
                 />
               </div>
             </motion.div>
@@ -489,10 +490,6 @@ export default function InboxPage() {
       {/* ── Footer bar ─────────────────────────────────────────── */}
       <FooterBar />
 
-      {/* QR modal */}
-      {showQR && activeTab?.mailbox && (
-        <QRModal address={activeTab.mailbox.address} onClose={() => setShowQR(false)} />
-      )}
 
       {/* Command palette */}
       <CommandPalette

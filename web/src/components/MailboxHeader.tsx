@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   Copy, Check, RotateCcw, Plus, Trash2,
   Wifi, WifiOff, X, ArrowRight, QrCode,
@@ -100,14 +100,14 @@ export function MailboxHeader({
       <div className="flex items-center justify-between px-4 pt-3 pb-2.5">
         <div className="flex items-center gap-2.5">
           {/* Logo mark */}
-          <div className="size-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-violet-900/30 shrink-0">
+          <div className="size-7 rounded-lg bg-linear-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-violet-900/30 shrink-0">
             <svg viewBox="0 0 20 20" fill="none" className="size-4">
               <path d="M3 5.5L10 11L17 5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               <rect x="2" y="4" width="16" height="12" rx="2" stroke="white" strokeWidth="1.8"/>
             </svg>
           </div>
           <div>
-            <div className="text-[13px] font-bold text-white tracking-tight leading-none">MailTub</div>
+            <div className="text-[13px] font-bold text-white tracking-tight leading-none">shitmail</div>
             <div className="text-[9px] text-slate-600 font-medium tracking-wide uppercase leading-none mt-0.5">by DML Labs</div>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function MailboxHeader({
           title="Click to copy address"
         >
           {loading || !mailbox ? (
-            <div className="h-[18px] w-44 bg-surface-2 rounded animate-pulse" />
+            <div className="h-[18px] w-44 bg-surface-2 rounded-sm animate-pulse" />
           ) : (
             <span className="font-mono text-[13px] text-violet-300 group-hover:text-violet-200 transition-colors break-all leading-tight">
               {mailbox.address}
@@ -196,7 +196,7 @@ export function MailboxHeader({
                       }}
                       placeholder="yourname"
                       maxLength={32}
-                      className="flex-1 min-w-0 bg-transparent text-[12px] font-mono text-slate-200 placeholder-slate-700 px-2.5 py-1.5 outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-[12px] font-mono text-slate-200 placeholder-slate-700 px-2.5 py-1.5 outline-hidden"
                     />
                     <span className="text-[10px] text-slate-600 font-mono pr-2 shrink-0">@{domain}</span>
                   </div>

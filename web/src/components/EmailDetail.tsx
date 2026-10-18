@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import {
-  Trash2, Code2, AlignLeft, List, Download, Paperclip,
+  Trash2, AlignLeft, List, Download, Paperclip,
   Mail, Clock, ArrowLeft, FileText, Image, Archive, File,
   ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, formatBytes } from '@/lib/utils'
 import { downloadAttachment, downloadEmailEML } from '@/api/client'
+import { emailText, safeLink } from '@/lib/emailText'
 import type { Email } from '@/types'
 
 interface Props {
@@ -15,10 +16,9 @@ interface Props {
   mailboxAddress: string
   onDelete: (id: string) => void
   onClose: () => void
-  blockRemoteImages?: boolean
 }
 
-type Tab = 'html' | 'text' | 'headers'
+type Tab = 'text' | 'headers'
 
 function extractDomain(from: string | null | undefined): string | null {
   if (!from) return null
@@ -26,15 +26,8 @@ function extractDomain(from: string | null | undefined): string | null {
   return match ? match[1] : null
 }
 
-function injectBlockerCSS(html: string): string {
-  const css = `img[src^="http"],img[src^="https"],img[src^="//"]{display:none!important}[style*="background-image"]{background-image:none!important}`
-  const styleTag = `<style id="__mt_blocker__">${css}</style>`
-  if (/<head[\s>]/i.test(html)) return html.replace(/<head([\s>])/i, `<head$1${styleTag}`)
-  return styleTag + html
-}
-
-export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRemoteImages }: Props) {
-  const [tab, setTab] = useState<Tab>('html')
+export function EmailDetail({ email, mailboxAddress, onDelete, onClose }: Props) {
+  const [tab, setTab] = useState<Tab>('text')
 
   if (!email) {
     return (
@@ -96,7 +89,7 @@ export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRem
             <ArrowLeft className="size-3.5" />
           </button>
 
-          <h2 className="flex-1 text-[15px] font-semibold text-primary leading-snug break-words min-w-0">
+          <h2 className="flex-1 text-[15px] font-semibold text-primary leading-snug wrap-break-word min-w-0">
             {email.subject || <span className="text-muted italic">(no subject)</span>}
           </h2>
 
@@ -179,11 +172,8 @@ export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRem
 
       {/* ── View tabs ────────────────────────────────────────── */}
       <div className="shrink-0 flex border-b border-border bg-surface-1/50">
-        <ViewTab active={tab === 'html'} icon={<Code2 className="size-3" />} onClick={() => setTab('html')}>
-          HTML
-        </ViewTab>
         <ViewTab active={tab === 'text'} icon={<AlignLeft className="size-3" />} onClick={() => setTab('text')}>
-          Plain text
+          Message
         </ViewTab>
         <ViewTab active={tab === 'headers'} icon={<List className="size-3" />} onClick={() => setTab('headers')}>
           Headers
@@ -192,29 +182,9 @@ export function EmailDetail({ email, mailboxAddress, onDelete, onClose, blockRem
 
       {/* ── Body ─────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === 'html' && (
-          <iframe
-            key={`${email.id}-html-${blockRemoteImages ? 'blocked' : 'open'}`}
-            srcDoc={(() => {
-              const base = email.bodyHtml ||
-                '<html><body style="font-family:system-ui,sans-serif;color:#64748b;padding:32px 24px;background:#fff;font-size:14px;line-height:1.6">No HTML content for this email.</body></html>'
-              return blockRemoteImages ? injectBlockerCSS(base) : base
-            })()}
-            sandbox="allow-same-origin"
-            className="w-full h-full border-0 bg-white"
-            title="Email HTML content"
-          />
-        )}
-
         {tab === 'text' && (
           <div className="h-full overflow-y-auto p-5">
-            {email.bodyText ? (
-              <pre className="font-mono text-[11px] text-secondary whitespace-pre-wrap leading-relaxed">
-                {email.bodyText}
-              </pre>
-            ) : (
-              <p className="text-[11px] text-muted italic">No plain text content for this email.</p>
-            )}
+            <ReadableMessage text={emailText(email.bodyText, email.bodyHtml)} />
           </div>
         )}
 
@@ -279,4 +249,15 @@ function AttachmentIcon({ contentType }: { contentType: string }) {
   if (ct.includes('zip') || ct.includes('tar') || ct.includes('gz')) return <Archive className="size-3 text-amber-400 shrink-0" />
   if (ct.startsWith('text/') || ct.includes('pdf')) return <FileText className="size-3 text-muted shrink-0" />
   return <File className="size-3 text-muted shrink-0" />
+}
+
+export function ReadableMessage({ text }: { text: string }) {
+  if (!text.trim()) return <p className="text-sm text-muted italic">No readable text in this email.</p>
+  return <div className="text-sm text-secondary whitespace-pre-wrap wrap-break-word leading-relaxed" data-testid="message-body">
+    {text.split(/(https?:\/\/[^\s<>"']+)/gi).map((part, i) => {
+      const trimmed = part.replace(/[.,;!?)]+$/, '')
+      const href = safeLink(trimmed)
+      return href ? <span key={i}><a href={href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="underline text-emerald-500">{trimmed}</a>{part.slice(trimmed.length)}</span> : part
+    })}
+  </div>
 }

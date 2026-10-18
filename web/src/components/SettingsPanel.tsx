@@ -1,6 +1,7 @@
+import { APITokens } from '@/components/APITokens'
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Moon, Sun, Monitor, Download, FileJson, Archive, Info, Loader2, Bell, ShieldOff } from 'lucide-react'
+import { motion } from 'motion/react'
+import { Moon, Sun, Monitor, Download, FileJson, Archive, Info, Loader2, Bell } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useTheme, type Theme } from '@/contexts/ThemeContext'
@@ -15,8 +16,6 @@ interface Props {
   activeEmails: Email[]
   soundEnabled: boolean
   onSoundToggle: () => void
-  blockRemoteImages: boolean
-  onBlockRemoteImagesToggle: () => void
 }
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
@@ -135,13 +134,13 @@ function SoundSection({
         aria-checked={enabled}
         title={enabled ? 'Disable sound' : 'Enable sound'}
         className={cn(
-          'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
           enabled ? 'bg-emerald-600' : 'bg-surface-3',
         )}
       >
         <span
           className={cn(
-            'size-3.5 rounded-full bg-white shadow transition-transform',
+            'size-3.5 rounded-full bg-white shadow-sm transition-transform',
             enabled ? 'translate-x-[19px]' : 'translate-x-[3px]',
           )}
         />
@@ -250,7 +249,7 @@ function AboutSection() {
       <div className="flex flex-col gap-1 pt-2 border-t border-border">
         <div className="flex items-center gap-3">
           <a
-            href="https://github.com/dml-labs/mailtub"
+            href="https://github.com/marc-schuetze/shitmail"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -258,7 +257,7 @@ function AboutSection() {
             GitHub →
           </a>
           <a
-            href="https://github.com/dml-labs/mailtub/releases"
+            href="https://github.com/marc-schuetze/shitmail/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -266,7 +265,7 @@ function AboutSection() {
             Releases →
           </a>
           <a
-            href="https://github.com/dml-labs/mailtub/issues"
+            href="https://github.com/marc-schuetze/shitmail/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-secondary hover:text-primary transition-colors underline underline-offset-2"
@@ -294,39 +293,6 @@ function AboutSection() {
   )
 }
 
-// ── Toggle row ─────────────────────────────────────────────────────────────────
-
-function ToggleRow({
-  label, description, enabled, onToggle,
-}: {
-  label: string; description: string; enabled: boolean; onToggle: () => void
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-primary">{label}</p>
-        <p className="text-xs text-secondary mt-0.5">{description}</p>
-      </div>
-      <button
-        onClick={onToggle}
-        role="switch"
-        aria-checked={enabled}
-        className={cn(
-          'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-          enabled ? 'bg-emerald-600' : 'bg-surface-3',
-        )}
-      >
-        <span
-          className={cn(
-            'size-3.5 rounded-full bg-white shadow transition-transform',
-            enabled ? 'translate-x-[19px]' : 'translate-x-[3px]',
-          )}
-        />
-      </button>
-    </div>
-  )
-}
-
 // ── Root component ────────────────────────────────────────────────────────────
 
 export function SettingsPanel({
@@ -336,8 +302,6 @@ export function SettingsPanel({
   activeEmails,
   soundEnabled,
   onSoundToggle,
-  blockRemoteImages,
-  onBlockRemoteImagesToggle,
 }: Props) {
   return (
     <motion.div
@@ -349,7 +313,7 @@ export function SettingsPanel({
       <div className="max-w-xl mx-auto px-6 py-8 space-y-4">
         <div className="mb-6">
           <h1 className="text-lg font-bold text-primary">Settings</h1>
-          <p className="text-sm text-secondary mt-0.5">Appearance, mailbox defaults, privacy, and export.</p>
+          <p className="text-sm text-secondary mt-0.5">Appearance, mailbox defaults, and export.</p>
         </div>
 
         <Section title="Appearance" icon={<Sun className="size-3.5" />}>
@@ -364,20 +328,13 @@ export function SettingsPanel({
           <SoundSection enabled={soundEnabled} onToggle={onSoundToggle} />
         </Section>
 
-        <Section title="Privacy" icon={<ShieldOff className="size-3.5" />}>
-          <ToggleRow
-            label="Block remote images"
-            description="Prevent tracking pixels and remote images from loading in HTML emails."
-            enabled={blockRemoteImages}
-            onToggle={onBlockRemoteImagesToggle}
-          />
-        </Section>
+        <Section title="Agent API tokens" icon={<Info className="size-3.5" />}><APITokens /></Section>
 
         <Section title="Export" icon={<Download className="size-3.5" />}>
           <ExportSection emails={activeEmails} mailbox={activeMailbox} />
         </Section>
 
-        <Section title="About MailTub" icon={<Info className="size-3.5" />}>
+        <Section title="About shitmail" icon={<Info className="size-3.5" />}>
           <AboutSection />
         </Section>
       </div>

@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
-        name: 'MailTub',
-        short_name: 'MailTub',
+        name: 'shitmail',
+        short_name: 'shitmail',
         description: 'Self-hosted disposable email service by DML Labs',
         start_url: '/',
         display: 'standalone',
@@ -81,9 +81,10 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          motion: ['framer-motion'],
+        // vite 8 (rolldown) only accepts the function form
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react'
+          if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'motion'
         },
       },
     },

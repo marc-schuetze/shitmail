@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/dml-labs/mailtub/internal/domain"
+	"github.com/marc-schuetze/shitmail/internal/domain"
 )
 
 // urlParam is defined in mailbox.go and shared across the handler package.
@@ -53,6 +53,15 @@ func (h *EmailHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles GET /api/v1/mailbox/{address}/emails/{id}
 func (h *EmailHandler) Get(w http.ResponseWriter, r *http.Request) {
+	h.get(w, r, true)
+}
+
+// GetReadOnly fetches a message without changing its unread state.
+func (h *EmailHandler) GetReadOnly(w http.ResponseWriter, r *http.Request) {
+	h.get(w, r, false)
+}
+
+func (h *EmailHandler) get(w http.ResponseWriter, r *http.Request, markRead bool) {
 	mb, ok := h.resolveMailbox(w, r)
 	if !ok {
 		return
@@ -66,8 +75,10 @@ func (h *EmailHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Auto-mark as read when fetched.
-	_ = h.emails.MarkRead(r.Context(), id)
-	email.IsRead = true
+	if markRead {
+		_ = h.emails.MarkRead(r.Context(), id)
+		email.IsRead = true
+	}
 
 	writeJSON(w, http.StatusOK, email)
 }
@@ -107,7 +118,10 @@ func (h *EmailHandler) MarkRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = h.emails.MarkRead(r.Context(), id)
+	if err := h.emails.MarkRead(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not mark email as read")
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -145,19 +159,9 @@ func (h *EmailHandler) GetAttachment(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(att.Data)
 }
 
-// resolveMailbox looks up the mailbox by URL param and writes a 404 if missing.
+// resolveMailbox looks up the mailbox by URL param, owner-checked.
 func (h *EmailHandler) resolveMailbox(w http.ResponseWriter, r *http.Request) (*domain.Mailbox, bool) {
-	address := urlParam(r, "address")
-	mb, err := h.mailboxes.FindByAddress(r.Context(), address)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "database error")
-		return nil, false
-	}
-	if mb == nil || mb.IsExpired() {
-		writeError(w, http.StatusNotFound, "mailbox not found or expired")
-		return nil, false
-	}
-	return mb, true
+	return ResolveOwnedMailbox(w, r, h.mailboxes)
 }
 
 func queryInt(r *http.Request, key string, def int) int {

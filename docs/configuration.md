@@ -1,6 +1,6 @@
 # Configuration
 
-All MailTub configuration is done via environment variables. No config file is required — copy `.env.example` to `.env` and edit it, or pass variables directly to the process.
+All shitmail configuration is done via environment variables. No config file is required — copy `.env.example` to `.env` and edit it, or pass variables directly to the process.
 
 ---
 
@@ -11,7 +11,7 @@ All MailTub configuration is done via environment variables. No config file is r
 | `PORT` | `int` | `8080` | HTTP and WebSocket server port |
 | `SMTP_PORT` | `int` | `2525` | SMTP server port |
 | `MAILTUB_DOMAIN` | `string` | `localhost` | Mail domain (e.g. `mail.example.com`). Must match your MX record in production. |
-| `DATABASE_PATH` | `string` | `./data/mailtub.db` | Path to the SQLite database file. Directory is created on first run. |
+| `DATABASE_PATH` | `string` | `./data/shitmail.db` | Path to the SQLite database file. Directory is created on first run. |
 | `MAILBOX_TTL` | `duration` | `24h` | Default mailbox lifetime. Valid values: `1h`, `6h`, `24h`, `168h` |
 | `LOG_LEVEL` | `string` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
 | `APP_VERSION` | `string` | `dev` | Version string shown in the UI and `/api/v1/health`. Set automatically by GoReleaser. |
@@ -31,7 +31,7 @@ All MailTub configuration is done via environment variables. No config file is r
 
 ## Attachment Limits
 
-MailTub enforces two independent layers of size control:
+shitmail enforces two independent layers of size control:
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -42,7 +42,7 @@ MailTub enforces two independent layers of size control:
 ### Example — restricting attachment sizes
 
 ```bash
-MAX_ATTACHMENT_SIZE_MB=10 MAX_TOTAL_ATTACHMENT_MB=20 MAX_BODY_KB=256 ./mailtub
+MAX_ATTACHMENT_SIZE_MB=10 MAX_TOTAL_ATTACHMENT_MB=20 MAX_BODY_KB=256 ./shitmail
 ```
 
 ---
@@ -51,7 +51,7 @@ MAX_ATTACHMENT_SIZE_MB=10 MAX_TOTAL_ATTACHMENT_MB=20 MAX_BODY_KB=256 ./mailtub
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ADMIN_PASSWORD` | `string` | _(empty)_ | **Optional.** Overrides the DB-managed admin password for Docker/CI deployments. When set, the password cannot be changed from the browser UI. When unset, MailTub stores the password as a bcrypt hash in SQLite — set it via the browser first-run wizard at `/admin/setup` (recommended for bare-metal installs). |
+| `ADMIN_PASSWORD` | `string` | _(empty)_ | **Optional.** Overrides the DB-managed admin password for Docker/CI deployments. When set, the password cannot be changed from the browser UI. When unset, shitmail stores the password as a bcrypt hash in SQLite — set it via the browser first-run wizard at `/admin/setup` (recommended for bare-metal installs). |
 | `API_KEY` | `string` | _(empty)_ | Protects all `/api/v1/*` endpoints with `X-API-Key` header authentication. When unset, the API is open. Generate with `openssl rand -hex 32`. |
 
 ---
@@ -65,7 +65,7 @@ MAX_ATTACHMENT_SIZE_MB=10 MAX_TOTAL_ATTACHMENT_MB=20 MAX_BODY_KB=256 ./mailtub
 ### Example — Upstash Redis
 
 ```bash
-REDIS_URL=rediss://:<token>@<host>:<port> ./mailtub
+REDIS_URL=rediss://:<token>@<host>:<port> ./shitmail
 ```
 
 ---
@@ -77,7 +77,7 @@ REDIS_URL=rediss://:<token>@<host>:<port> ./mailtub
 PORT=8080
 SMTP_PORT=2525
 MAILTUB_DOMAIN=mail.example.com
-DATABASE_PATH=/data/mailtub.db
+DATABASE_PATH=/data/shitmail.db
 MAILBOX_TTL=24h
 ADMIN_PASSWORD=$(openssl rand -hex 32)
 
@@ -94,12 +94,12 @@ API_KEY=$(openssl rand -hex 32)
 
 ## Loading `.env` Files
 
-MailTub uses [`godotenv`](https://github.com/joho/godotenv) to automatically load a `.env` file from the current working directory at startup. Variables set in the environment always take precedence over `.env` file values.
+shitmail uses [`godotenv`](https://github.com/joho/godotenv) to automatically load a `.env` file from the current working directory at startup. Variables set in the environment always take precedence over `.env` file values.
 
 ```bash
 cp .env.example .env
 $EDITOR .env
-./mailtub
+./shitmail
 ```
 
 ---
@@ -112,8 +112,8 @@ When running via Docker or Docker Compose, pass variables via `environment:` or 
 docker run -p 8080:8080 -p 2525:2525 \
   -e MAILTUB_DOMAIN=mail.example.com \
   -e ADMIN_PASSWORD=changeme \
-  -v mailtub_data:/data \
-  ghcr.io/dml-labs/mailtub:latest
+  -v shitmail_data:/data \
+  shitmail:latest
 ```
 
 See [deployment.md](deployment.md) for the full Docker Compose example.

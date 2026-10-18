@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -16,27 +18,60 @@ const (
 	maxMsgSize = 1024
 )
 
+// PublicHost is the hostname the UI is served on (MAILTUB_DOMAIN). Set once at
+// startup; the Origin check accepts it in addition to the request's own Host.
+var PublicHost string
+
+func hostOnly(h string) string {
+	if i := strings.LastIndex(h, ":"); i > 0 && !strings.Contains(h[i:], "]") {
+		return h[:i]
+	}
+	return h
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     func(_ *http.Request) bool { return true },
+	// Same-host only: Origin must match the request Host (port-insensitive),
+	// the proxy's X-Forwarded-Host, or the configured public hostname.
+	CheckOrigin: func(r *http.Request) bool {
+		o := r.Header.Get("Origin")
+		if o == "" {
+			return true
+		}
+		u, err := url.Parse(o)
+		if err != nil {
+			return false
+		}
+		oh := u.Hostname()
+		for _, h := range []string{hostOnly(r.Host), hostOnly(r.Header.Get("X-Forwarded-Host")), PublicHost} {
+			if h != "" && strings.EqualFold(oh, h) {
+				return true
+			}
+		}
+		slog.Warn("ws: origin rejected", "origin", o, "host", r.Host, "forwarded_host", r.Header.Get("X-Forwarded-Host"))
+		return false
+	},
 }
 
 // Client is a single WebSocket connection managed by the Hub.
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan ServerMessage
+	hub   *Hub
+	conn  *websocket.Conn
+	send  chan ServerMessage
+	allow func(address string) bool
 }
 
 // ServeWS upgrades an HTTP request to a WebSocket and begins pumping messages.
-func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request) {
+// allow decides per subscribe request whether this connection may watch the
+// mailbox address (ownership check); nil allows everything.
+func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request, allow func(address string) bool) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("ws: upgrade failed", "error", err)
 		return
 	}
-	c := &Client{hub: hub, conn: conn, send: make(chan ServerMessage, 64)}
+	c := &Client{hub: hub, conn: conn, send: make(chan ServerMessage, 64), allow: allow}
 	hub.Register(c)
 	go c.writePump()
 	go c.readPump()
@@ -65,7 +100,7 @@ func (c *Client) readPump() {
 		}
 		switch msg.Type {
 		case "subscribe":
-			if msg.Mailbox != "" {
+			if msg.Mailbox != "" && (c.allow == nil || c.allow(msg.Mailbox)) {
 				c.hub.Subscribe(c, msg.Mailbox)
 				c.send <- ServerMessage{Type: EventSubscribed, Mailbox: msg.Mailbox}
 			}

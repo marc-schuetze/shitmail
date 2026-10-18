@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   Plus, Copy, RefreshCw, Moon, Sun, Monitor, Settings,
   Star, Paperclip, Mail, ExternalLink, Download, Archive,
@@ -39,7 +39,7 @@ function highlight(text: string, query: string) {
   return (
     <span>
       {text.slice(0, idx)}
-      <mark className="bg-emerald-500/25 text-emerald-400 rounded-sm">{text.slice(idx, idx + query.length)}</mark>
+      <mark className="bg-emerald-500/25 text-emerald-400 rounded-xs">{text.slice(idx, idx + query.length)}</mark>
       {text.slice(idx + query.length)}
     </span>
   )
@@ -230,7 +230,7 @@ export function CommandPalette({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs"
             onClick={onClose}
           />
 
@@ -254,9 +254,9 @@ export function CommandPalette({
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Type a command or search…"
-                  className="flex-1 bg-transparent text-sm text-primary placeholder-muted outline-none"
+                  className="flex-1 bg-transparent text-sm text-primary placeholder-muted outline-hidden"
                 />
-                <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted border border-border font-mono">
+                <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] text-muted border border-border font-mono">
                   ESC
                 </kbd>
               </div>
@@ -292,7 +292,7 @@ export function CommandPalette({
                         )}
                       </span>
                       {cmd.shortcut && (
-                        <kbd className="shrink-0 hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted border border-border font-mono">
+                        <kbd className="shrink-0 hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] text-muted border border-border font-mono">
                           {cmd.shortcut}
                         </kbd>
                       )}

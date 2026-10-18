@@ -1,4 +1,4 @@
-// Package storage implements SQLite-backed repositories for MailTub.
+// Package storage implements SQLite-backed repositories for shitmail.
 // It uses modernc.org/sqlite — a pure-Go SQLite driver with no CGO dependency —
 // so the binary stays truly self-contained on every platform.
 package storage
@@ -23,12 +23,14 @@ CREATE TABLE IF NOT EXISTS mailboxes (
     address    TEXT UNIQUE NOT NULL,
     local_part TEXT NOT NULL,
     domain     TEXT NOT NULL,
+    owner      TEXT NOT NULL DEFAULT '',
     expires_at DATETIME NOT NULL,
     created_at DATETIME NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_mailboxes_address    ON mailboxes(address);
 CREATE INDEX IF NOT EXISTS idx_mailboxes_expires_at ON mailboxes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_mailboxes_owner      ON mailboxes(owner);
 
 CREATE TABLE IF NOT EXISTS emails (
     id          TEXT PRIMARY KEY,
@@ -58,6 +60,16 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE INDEX IF NOT EXISTS idx_attachments_email_id ON attachments(email_id);
 
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id TEXT PRIMARY KEY,
+    owner TEXT NOT NULL,
+    name TEXT NOT NULL,
+    token_hash TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_api_tokens_owner ON api_tokens(owner);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -70,6 +82,7 @@ type DB struct {
 	Mailboxes *MailboxStore
 	Emails    *EmailStore
 	Settings  *SettingsStore
+	Tokens    *TokenStore
 }
 
 // Open opens (or creates) the SQLite database at path and runs migrations.
@@ -78,7 +91,10 @@ func Open(path string) (*DB, error) {
 		return nil, fmt.Errorf("storage: create data dir: %w", err)
 	}
 
-	sqldb, err := sql.Open("sqlite", path)
+	// Pragmas in the DSN apply to every connection; the ones in the schema
+	// string only hit the connection that ran the migration.
+	dsn := "file:" + path + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+	sqldb, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("storage: open sqlite: %w", err)
 	}
@@ -94,6 +110,7 @@ func Open(path string) (*DB, error) {
 	db.Mailboxes = &MailboxStore{db: sqldb}
 	db.Emails = &EmailStore{db: sqldb}
 	db.Settings = &SettingsStore{db: sqldb}
+	db.Tokens = &TokenStore{db: sqldb}
 	return db, nil
 }
 

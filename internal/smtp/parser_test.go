@@ -5,6 +5,29 @@ import (
 	"testing"
 )
 
+func TestParse_legacyCharsetHTML(t *testing.T) {
+	for _, charset := range []string{"iso-8859-1", "windows-1252"} {
+		t.Run(charset, func(t *testing.T) {
+			part := "Content-Type: text/html; charset=" + charset + "\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n<p>Best=E4tigung f=FCr dich</p>"
+			for _, multipart := range []bool{false, true} {
+				raw := "From: sender@example.com\r\nSubject: =?ISO-8859-1?Q?Best=E4tigung?=\r\nMIME-Version: 1.0\r\n"
+				if multipart {
+					raw += "Content-Type: multipart/alternative; boundary=test\r\n\r\n--test\r\nContent-Type: text/plain\r\n\r\nFallback\r\n--test\r\n" + part + "\r\n--test--\r\n"
+				} else {
+					raw += part
+				}
+				p, err := Parse(strings.NewReader(raw), ParseOptions{DropAttachments: true})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if p.HTMLBody != "<p>Bestätigung für dich</p>" || p.Subject != "Bestätigung" || p.From != "sender@example.com" {
+					t.Fatalf("multipart=%v: subject=%q from=%q HTML=%q", multipart, p.Subject, p.From, p.HTMLBody)
+				}
+			}
+		})
+	}
+}
+
 func TestParse_plainText(t *testing.T) {
 	raw := "From: sender@example.com\r\nSubject: Hello\r\nTo: user@localhost\r\nMIME-Version: 1.0\r\nContent-Type: text/plain\r\n\r\nPlain body here."
 	p, err := Parse(strings.NewReader(raw), ParseOptions{})

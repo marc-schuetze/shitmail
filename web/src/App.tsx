@@ -50,7 +50,7 @@ export default function App() {
             toast: 'bg-surface-3 border border-border text-primary text-sm rounded-lg shadow-lg',
             title: 'font-medium',
             description: 'text-secondary text-xs',
-            actionButton: 'bg-accent text-white text-xs rounded px-2 py-1',
+            actionButton: 'bg-accent text-white text-xs rounded-sm px-2 py-1',
             cancelButton: 'text-secondary text-xs',
           },
         }}

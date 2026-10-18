@@ -24,10 +24,29 @@ export function formatRelativeTime(dateStr: string): string {
 }
 
 /** Format a future date as a precise countdown string. */
+/** Splits "slack1-5i0ra" into the user-chosen name and the per-user tag. */
+export function splitLocalPart(localPart: string): { name: string; tag: string } {
+  const i = localPart.lastIndexOf('-')
+  return i > 0 ? { name: localPart.slice(0, i), tag: localPart.slice(i + 1) } : { name: localPart, tag: '' }
+}
+
+/** The user-facing mailbox name without the tag suffix. */
+export function mailboxName(localPart: string): string {
+  return splitLocalPart(localPart).name
+}
+
+/** Mailboxes kept "forever" carry an expiry decades out. */
+export function isForever(expiresAt: string): boolean {
+  return new Date(expiresAt).getTime() - Date.now() > 50 * 365 * 24 * 3600 * 1000
+}
+
 export function formatCountdown(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now()
   if (diff <= 0) return 'expired'
+  if (isForever(expiresAt)) return 'forever'
   const totalSecs = Math.floor(diff / 1000)
+  const days = Math.floor(totalSecs / 86400)
+  if (days >= 2) return `${days}d ${Math.floor((totalSecs % 86400) / 3600)}h`
   const hours = Math.floor(totalSecs / 3600)
   const minutes = Math.floor((totalSecs % 3600) / 60)
   const seconds = totalSecs % 60

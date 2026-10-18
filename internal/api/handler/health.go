@@ -1,4 +1,4 @@
-// Package handler contains the HTTP request handlers for MailTub's REST API.
+// Package handler contains the HTTP request handlers for shitmail's REST API.
 package handler
 
 import (
@@ -10,7 +10,7 @@ import (
 
 var startTime = time.Now()
 
-// AppVersion is set at startup by cmd/mailtub/cmd_serve.go from the ldflags
+// AppVersion is set at startup by cmd/shitmail/cmd_serve.go from the ldflags
 // version variable. Defaults to "dev" when not built with a release tag.
 var AppVersion = "dev"
 

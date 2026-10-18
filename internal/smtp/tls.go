@@ -61,7 +61,7 @@ func generateSelfSigned(domain string) (tls.Certificate, error) {
 	tmpl := &x509.Certificate{
 		SerialNumber: serial,
 		Subject: pkix.Name{
-			Organization: []string{"MailTub (self-signed)"},
+			Organization: []string{"shitmail (self-signed)"},
 			CommonName:   domain,
 		},
 		NotBefore:             time.Now().Add(-1 * time.Minute),
